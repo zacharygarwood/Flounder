@@ -11,11 +11,14 @@ impl Board {
         Self {
             board: [
                 // 0x88 Board Representation
-                r, n, b, q, k, b, n, r, o, o, o, o, o, o, o, o, p, p, p, p, p, p, p, p, o, o, o, o,
-                o, o, o, o, e, e, e, e, e, e, e, e, o, o, o, o, o, o, o, o, e, e, e, e, e, e, e, e,
-                o, o, o, o, o, o, o, o, e, e, e, e, e, e, e, e, o, o, o, o, o, o, o, o, e, e, e, e,
-                e, e, e, e, o, o, o, o, o, o, o, o, P, P, P, P, P, P, P, P, o, o, o, o, o, o, o, o,
-                R, N, B, Q, K, B, N, R, o, o, o, o, o, o, o, o,
+                r, n, b, q, k, b, n, r,  o, o, o, o, o, o, o, o, 
+                p, p, p, p, p, p, p, p,  o, o, o, o, o, o, o, o, 
+                e, e, e, e, e, e, e, e,  o, o, o, o, o, o, o, o, 
+                e, e, e, e, e, e, e, e,  o, o, o, o, o, o, o, o, 
+                e, e, e, e, e, e, e, e,  o, o, o, o, o, o, o, o, 
+                e, e, e, e, e, e, e, e,  o, o, o, o, o, o, o, o, 
+                P, P, P, P, P, P, P, P,  o, o, o, o, o, o, o, o,
+                R, N, B, Q, K, B, N, R,  o, o, o, o, o, o, o, o,
             ],
             turn_color: WHITE,
         }
@@ -94,8 +97,11 @@ impl Board {
 
     fn reset_board(&mut self) {
         use crate::pieces::Pieces::*;
-        for square in &mut self.board {
-            *square = e;
+        for (index, square) in &mut self.board.iter_mut().enumerate() {
+            // If square in on the board excluding off board, then make it empty
+            if (index & 0x88) == 0 {
+                *square = e;
+            }
         }
     }
 
