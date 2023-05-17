@@ -27,6 +27,8 @@ fn main() {
 }
 
 fn print_board(num: u64) {
+    use crate::bitboard::{RANKS, FILES};
+    
     for rank in (0..RANKS).rev() {
         print!(" {} ", rank+1);
         for file in 0..FILES {

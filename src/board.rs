@@ -1,9 +1,6 @@
 use crate::pieces::{PieceType, Color, PIECE_COUNT, COLOR_COUNT};
 use crate::square::Square;
-use crate::bitboard::Bitboard;
-
-pub const FILES: usize = 8;
-pub const RANKS: usize = 8;
+use crate::bitboard::{Bitboard, RANKS, FILES, RANK_3, FILE_A, FILE_H};
 
 // Represents the chess board using bitboards
 pub struct Board {
@@ -34,8 +31,8 @@ impl Board {
 
         // Generate moves for each piece type (pawns, knights, bishops, rooks, etc.)
         // Example: White Pawns
-        let pawns = self.position.pieces[Pawn] & self.position.colors[White];
-        let pawn_moves = self.generate_pawn_moves(pawns, self.active_color);
+        let pawns = self.bb_piece(Pawn);
+        let pawn_moves = self.generate_pawn_moves();
         moves.extend(pawn_moves);
 
         // Generate moves for other piece types
@@ -43,10 +40,14 @@ impl Board {
         moves
     }
 
-    fn generate_pawn_moves(&self, pawns: u64, color: Color) -> Vec<u64> {
-        use crate::pieces::Color::*;
+    fn generate_pawn_moves(&self) -> Vec<u64> {
+        use crate::pieces::{PieceType::*, Color::*};
 
         let mut moves = Vec::new();
+        let color = self.active_color;
+        let pawns = self.bb_piece(Pawn);
+        let empty_squares = !(self.bb_color(White) | self.bb_color(Black));
+
         let forward_mask = match color {
             Color::White => 8,
             Color::Black => -8,
@@ -60,29 +61,19 @@ impl Board {
             Color::Black => -7,
         };
 
-        // Generate single forward moves
-        let single_forward_moves = (pawns << forward_mask) & !(self.position.colors[White] | self.position.colors[Black]);
-        moves.push(single_forward_moves);
+        // Generate single pawn pushes
+        let single_pushes = (pawns << forward_mask) & empty_squares;
+        moves.push(single_pushes);
         
-        // Generate double forward moves for pawns in the starting position
-        let starting_pawns = match color {
-            Color::White => pawns & 0x000000000000FF00,
-            Color::Black => pawns & 0x00FF000000000000,
-        };
-        let double_forward_moves = (starting_pawns << (forward_mask * 2)) & !(self.position.colors[White] | self.position.colors[Black]);
-        
-        // Perform additional blocking check for double pawn moves
-        // FIXME: There is a bug here where a double pawn push can jump over a piece. Frisky little buggers >:( (probably doing this wayyyy wrong)
-        let blocking_squares = ((starting_pawns << forward_mask) | (starting_pawns << (forward_mask * 2))) & (self.position.colors[White] | self.position.colors[Black]);
-
-        let valid_double_forward_moves = double_forward_moves & !blocking_squares;
-
-        moves.push(valid_double_forward_moves);
+        // Generate double pawn pushes
+        let double_pawns = single_pushes & RANK_3;
+        let double_pushes = (double_pawns << forward_mask) & empty_squares;
+        moves.push(double_pushes);
 
         // Generate pawn attacks
         let pawn_attacks = match color {
-            Color::White => ((pawns & !File::H.bitboard()) << left_attack_mask) | ((pawns & !File::A.bitboard()) << right_attack_mask),
-            Color::Black => ((pawns & !File::H.bitboard()) >> right_attack_mask) | ((pawns & !File::A.bitboard()) >> left_attack_mask),
+            Color::White => ((pawns & !FILE_H) << left_attack_mask) | ((pawns & !FILE_A) << right_attack_mask),
+            Color::Black => ((pawns & !FILE_H) >> right_attack_mask) | ((pawns & !FILE_A) >> left_attack_mask),
         };
         let enemy_pieces = match color {
             Color::White => self.position.colors[Black],
@@ -169,32 +160,5 @@ impl Castle {
             black_king: true,
             black_queen: true,
         } 
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum File {
-    A,
-    B,
-    C,
-    D,
-    E,
-    F,
-    G,
-    H,
-}
-
-impl File {
-    pub fn bitboard(self) -> u64 {
-        match self {
-            File::A => 0x0101010101010101,
-            File::B => 0x0202020202020202,
-            File::C => 0x0404040404040404,
-            File::D => 0x0808080808080808,
-            File::E => 0x1010101010101010,
-            File::F => 0x2020202020202020,
-            File::G => 0x4040404040404040,
-            File::H => 0x8080808080808080,
-        }
     }
 }
