@@ -1,59 +1,41 @@
-use crate::pieces::{Piece, Color};
+use crate::pieces::{PieceType, Color, PIECE_COUNT, COLOR_COUNT};
+use crate::square::Square;
+use crate::bitboard::Bitboard;
+
+pub const FILES: usize = 8;
+pub const RANKS: usize = 8;
 
 // Represents the chess board using bitboards
 pub struct Board {
-    pieces: [u64; 6], // Six bitboards, one for each piece type
-    colors: [u64; 2], // Two bitboards, one for each color
-    turn_color: Color, // Whos turn it is
+    position: Position,
+    active_color: Color,
+    castling_availability: Castle,
+    en_passant: Option<Square>,
+    half_move: u8,
+    full_move: u8,
 }
 
 impl Board {
     pub fn new() -> Self{
-        use crate::pieces::{Piece::*, Color::*};
-        let mut pieces = [0; 6];
-        let mut colors = [0; 2];
-        let turn_color = White;
-        
-        pieces[Pawn as usize] = 0x00ff00000000ff00;
-        pieces[Knight as usize] = 0x4200000000000042;
-        pieces[Bishop as usize] = 0x2400000000000024;
-        pieces[Rook as usize] = 0x8100000000000081;
-        pieces[Queen as usize] = 0x0800000000000008;
-        pieces[King as usize] = 0x1000000000000010;
-        
-        colors[White as usize] = 0x000000000000ffff;
-        colors[Black as usize] = 0xffff000000000000;
-        
-        // Testing pawn captures
-        colors[Black as usize] = colors[Black as usize] | 0x0000000000880000;
-
-        Self { pieces, colors, turn_color}
-    }
-
-    // Returns select pieces of a certain color e.g. white pawns
-    pub fn get_colored_pieces(&self, color: Color, piece: Piece) -> u64 {
-        self.pieces[piece as usize] & self.colors[color as usize]
-    }
-
-    // Returns all pieces of a certain color e.g. white pieces
-    pub fn get_colors(&self, color: Color) -> u64 {
-        self.colors[color as usize]
-    }
-
-    // Returns all pieces of a select type e.g. pawns
-    pub fn get_pieces(&self, piece: Piece) -> u64 {
-        self.pieces[piece as usize]
+        Self { 
+            position: Position::new(),
+            active_color: Color::White,
+            castling_availability: Castle::new(),
+            en_passant: None,
+            half_move: 0,
+            full_move: 1,
+        }
     }
 
     pub fn generate_moves(&self) -> Vec<u64> {
-        use crate::pieces::{Piece::*, Color::*};
+        use crate::pieces::{PieceType::*, Color::*};
 
         let mut moves = Vec::new();
 
         // Generate moves for each piece type (pawns, knights, bishops, rooks, etc.)
         // Example: White Pawns
-        let pawns = self.pieces[Pawn as usize] & self.colors[White as usize];
-        let pawn_moves = self.generate_pawn_moves(pawns, self.turn_color);
+        let pawns = self.position.pieces[Pawn] & self.position.colors[White];
+        let pawn_moves = self.generate_pawn_moves(pawns, self.active_color);
         moves.extend(pawn_moves);
 
         // Generate moves for other piece types
@@ -79,7 +61,7 @@ impl Board {
         };
 
         // Generate single forward moves
-        let single_forward_moves = (pawns << forward_mask) & !(self.colors[White as usize] | self.colors[Black as usize]);
+        let single_forward_moves = (pawns << forward_mask) & !(self.position.colors[White] | self.position.colors[Black]);
         moves.push(single_forward_moves);
         
         // Generate double forward moves for pawns in the starting position
@@ -87,11 +69,11 @@ impl Board {
             Color::White => pawns & 0x000000000000FF00,
             Color::Black => pawns & 0x00FF000000000000,
         };
-        let double_forward_moves = (starting_pawns << (forward_mask * 2)) & !(self.colors[White as usize] | self.colors[Black as usize]);
+        let double_forward_moves = (starting_pawns << (forward_mask * 2)) & !(self.position.colors[White] | self.position.colors[Black]);
         
         // Perform additional blocking check for double pawn moves
         // FIXME: There is a bug here where a double pawn push can jump over a piece. Frisky little buggers >:( (probably doing this wayyyy wrong)
-        let blocking_squares = ((starting_pawns << forward_mask) | (starting_pawns << (forward_mask * 2))) & (self.colors[White as usize] | self.colors[Black as usize]);
+        let blocking_squares = ((starting_pawns << forward_mask) | (starting_pawns << (forward_mask * 2))) & (self.position.colors[White] | self.position.colors[Black]);
 
         let valid_double_forward_moves = double_forward_moves & !blocking_squares;
 
@@ -103,16 +85,92 @@ impl Board {
             Color::Black => ((pawns & !File::H.bitboard()) >> right_attack_mask) | ((pawns & !File::A.bitboard()) >> left_attack_mask),
         };
         let enemy_pieces = match color {
-            Color::White => self.colors[Black as usize],
-            Color::Black => self.colors[White as usize],
+            Color::White => self.position.colors[Black],
+            Color::Black => self.position.colors[White],
         };
         let valid_pawn_attacks = pawn_attacks & enemy_pieces;
         moves.push(valid_pawn_attacks);
 
         moves
     }
+
+        // Returns select pieces of a certain color e.g. white pawns
+        pub fn bb(&self, color: Color, piece: PieceType) -> u64 {
+            self.position.bb(color, piece)
+        }
+    
+        // Returns all pieces of a certain color e.g. white pieces
+        pub fn bb_color(&self, color: Color) -> u64 {
+            self.position.bb_color(color)
+        }
+    
+        // Returns all pieces of a select type e.g. pawns
+        pub fn bb_piece(&self, piece: PieceType) -> u64 {
+            self.position.bb_piece(piece)
+        }
 }
 
+
+pub struct Position {
+    pieces: [Bitboard; PIECE_COUNT], // Six bitboards for the pieces
+    colors: [Bitboard; COLOR_COUNT], // Two bitboards for the colors
+}
+
+impl Position {
+    pub fn new() -> Self{
+        use crate::pieces::{PieceType::*, Color::*};
+        let mut pieces = [0; PIECE_COUNT];
+        let mut colors = [0; COLOR_COUNT];
+        
+        pieces[Pawn] = 0x00ff00000000ff00;
+        pieces[Knight] = 0x4200000000000042;
+        pieces[Bishop] = 0x2400000000000024;
+        pieces[Rook] = 0x8100000000000081;
+        pieces[Queen] = 0x0800000000000008;
+        pieces[King] = 0x1000000000000010;
+        
+        colors[White] = 0x000000000000ffff;
+        colors[Black] = 0xffff000000000000;
+        
+        // DELETEME: Testing pawn captures
+        colors[Black] = colors[Black] | 0x0000000000880000;
+
+        Self { pieces, colors}
+    }
+
+    // Returns select pieces of a certain color e.g. white pawns
+    pub fn bb(&self, color: Color, piece: PieceType) -> u64 {
+        self.pieces[piece] & self.colors[color]
+    }
+
+    // Returns all pieces of a certain color e.g. white pieces
+    pub fn bb_color(&self, color: Color) -> u64 {
+        self.colors[color]
+    }
+
+    // Returns all pieces of a select type e.g. pawns
+    pub fn bb_piece(&self, piece: PieceType) -> u64 {
+        self.pieces[piece]
+    }
+}
+
+pub struct Castle {
+    pub white_king: bool,
+    pub white_queen: bool,
+    pub black_king: bool,
+    pub black_queen: bool,
+}
+
+impl Castle {
+    pub fn new() -> Self {
+        Self {
+            white_king: true,
+            white_queen: true,
+            black_king: true,
+            black_queen: true,
+        } 
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum File {

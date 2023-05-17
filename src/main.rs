@@ -2,7 +2,9 @@ mod board;
 mod defs;
 mod pieces;
 mod moves;
-use board::Board;
+mod square;
+mod bitboard;
+use board::*;
 use pieces::{Piece, Color};
 
 fn main() {
@@ -11,10 +13,10 @@ fn main() {
 
     println!("Staring position: \n");
     println!("White pieces: \n");
-    print_board(board.get_colors(Color::White));
+    print_board(board.bb_color(Color::White));
 
     println!("Black pieces: \n");
-    print_board(board.get_colors(Color::Black));
+    print_board(board.bb_color(Color::Black));
 
     println!("Move positions: \n");
     // Generate and print the moves
@@ -25,7 +27,6 @@ fn main() {
 }
 
 fn print_board(num: u64) {
-    use crate::defs::*;
     for rank in (0..RANKS).rev() {
         print!(" {} ", rank+1);
         for file in 0..FILES {

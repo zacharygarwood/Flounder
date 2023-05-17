@@ -18,8 +18,7 @@ impl Move {
 #[derive(Debug)]
 pub enum MoveType {
     Quiet,    // Non-capturing move
-    Capture,  // Capturing move
-    Evasion, 
+    Capture,  // Capturing move 
     EnPassant,
-    Castling,
+    Castle,
 }
