@@ -1,6 +1,7 @@
 mod board;
 mod defs;
 mod pieces;
+mod moves;
 use board::Board;
 
 fn main() {
