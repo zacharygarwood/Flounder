@@ -1,9 +1,9 @@
 use crate::bitboard::{Bitboard, Shift, RANKS, FILES};
 use crate::moves::{NORTH, SOUTH, EAST, WEST};
-use crate::square::{rank_file_to_index, square_to_algebraic};
+use crate::square::{rank_file_to_square, square_to_algebraic};
 use crate::util::{print_board, board_to_hex};
 use crate::square::Square;
-use crate::pieces::PieceType;
+use crate::pieces::Piece;
 
 pub struct Table {
     pub knight_lookup: [Bitboard; 64],
@@ -32,13 +32,13 @@ impl Table {
         }
     }
 
-    pub fn moves(&self, square: Square, piece: PieceType) -> Bitboard {
+    pub fn moves(&self, square: Square, piece: Piece) -> Bitboard {
         match piece {
-            PieceType::Knight => self.knight_lookup[square as usize],
-            PieceType::King => self.king_lookup[square as usize],
-            PieceType::Bishop => 0, // TODO: magic stuff 
-            PieceType::Rook => 0,
-            PieceType::Queen => 0,
+            Piece::Knight => self.knight_lookup[square as usize],
+            Piece::King => self.king_lookup[square as usize],
+            Piece::Bishop => 0, // TODO: magic stuff 
+            Piece::Rook => 0,
+            Piece::Queen => 0,
             _ => 0 // No need for Pawns as they are generated separately
         }
     }
@@ -51,7 +51,7 @@ pub fn generate_knight_lookup_table() -> [Bitboard; 64] {
     for rank in 0..RANKS {
         for file in 0..FILES {
             let mut board: Bitboard = 0;
-            let square = rank_file_to_index(rank as u8, file as u8) as usize;
+            let square = rank_file_to_square(rank as u8, file as u8) as usize;
 
             board |= 1 << square;
             table[square] |= board.shift(NORTH + NORTH + EAST) |
@@ -73,7 +73,7 @@ pub fn generate_king_lookup_table() -> [Bitboard; 64] {
     for rank in 0..RANKS {
         for file in 0..FILES {
             let mut board: Bitboard = 0;
-            let square = rank_file_to_index(rank as u8, file as u8) as usize;
+            let square = rank_file_to_square(rank as u8, file as u8) as usize;
 
             board |= 1 << square;
             table[square] |= board.shift(NORTH) |

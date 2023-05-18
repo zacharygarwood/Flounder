@@ -1,6 +1,6 @@
 use crate::board::Board;
 use crate::bitboard::{Bitboard, BitboardIterator, Shift, RANKS, FILES, RANK_2, RANK_3, RANK_6, RANK_7, FILE_A, FILE_H};
-use crate::pieces::{PieceType, Color};
+use crate::pieces::{Piece, Color};
 use crate::table::Table;
 
 pub const NORTH: i8 = 8;
@@ -59,7 +59,7 @@ pub fn generate_moves(board: &Board) -> Vec<Move>{
 }
 
 fn generate_psuedo_legal_pawn_moves(board: &Board, moves: &mut Vec<Move>) {
-    use crate::pieces::{PieceType::*, Color::*};
+    use crate::pieces::{Piece::*, Color::*};
 
     let color = board.active_color();
     let pawns = board.bb(color, Pawn);
@@ -113,7 +113,7 @@ fn extract_pawn_moves(mut bitboard: Bitboard, offset: i8, move_type: MoveType, m
     }
 }
 
-fn generate_psuedo_legal_moves(board: &Board, piece: PieceType, moves: &mut Vec<Move>) {
+fn generate_psuedo_legal_moves(board: &Board, piece: Piece, moves: &mut Vec<Move>) {
 
     let color = board.active_color();
     let pieces = board.bb(color, piece);
@@ -123,11 +123,11 @@ fn generate_psuedo_legal_moves(board: &Board, piece: PieceType, moves: &mut Vec<
         // FIXME: Need to figure out where I want to initialize Table as it is used here.
         // I could make it a const in main but there is probably a better way
         match piece {
-            PieceType::Knight => // Table::moves(square, piece),
-            PieceType::King => // self.king_lookup[square as usize],
-            PieceType::Bishop => 0, // TODO: magic stuff 
-            PieceType::Rook => 0,
-            PieceType::Queen => 0,
+            Piece::Knight => // Table::moves(square, piece),
+            Piece::King => // self.king_lookup[square as usize],
+            Piece::Bishop => 0, // TODO: magic stuff 
+            Piece::Rook => 0,
+            Piece::Queen => 0,
             _ => 0 // No need for Pawns as they are generated separately
         }
     }

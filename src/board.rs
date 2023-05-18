@@ -1,4 +1,4 @@
-use crate::pieces::{PieceType, Color, PIECE_COUNT, COLOR_COUNT};
+use crate::pieces::{Piece, Color, PIECE_COUNT, COLOR_COUNT};
 use crate::square::Square;
 use crate::bitboard::{Bitboard};
 
@@ -25,7 +25,7 @@ impl Board {
     }
 
     // Returns select pieces of a certain color e.g. white pawns
-    pub fn bb(&self, color: Color, piece: PieceType) -> Bitboard {
+    pub fn bb(&self, color: Color, piece: Piece) -> Bitboard {
         self.position.bb(color, piece)
     }
 
@@ -35,7 +35,7 @@ impl Board {
     }
 
     // Returns all pieces of a select type e.g. pawns
-    pub fn bb_piece(&self, piece: PieceType) -> Bitboard {
+    pub fn bb_piece(&self, piece: Piece) -> Bitboard {
             self.position.bb_piece(piece)
         }
 
@@ -63,7 +63,7 @@ pub struct Position {
 
 impl Position {
     pub fn new() -> Self{
-        use crate::pieces::{PieceType::*, Color::*};
+        use crate::pieces::{Piece::*, Color::*};
         let mut pieces = [0; PIECE_COUNT];
         let mut colors = [0; COLOR_COUNT];
         
@@ -81,7 +81,7 @@ impl Position {
     }
 
     // Returns select pieces of a certain color e.g. white pawns
-    pub fn bb(&self, color: Color, piece: PieceType) -> u64 {
+    pub fn bb(&self, color: Color, piece: Piece) -> u64 {
         self.pieces[piece] & self.colors[color]
     }
 
@@ -91,7 +91,7 @@ impl Position {
     }
 
     // Returns all pieces of a select type e.g. pawns
-    pub fn bb_piece(&self, piece: PieceType) -> u64 {
+    pub fn bb_piece(&self, piece: Piece) -> u64 {
         self.pieces[piece]
     }
 }

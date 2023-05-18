@@ -6,7 +6,7 @@ pub const COLOR_COUNT: usize = 2;
 pub const PIECE_COUNT: usize = 6;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum PieceType {
+pub enum Piece {
     Pawn,
     Knight,
     Bishop,
@@ -21,57 +21,30 @@ pub enum Color {
     Black,
 }
 
-pub struct Piece {
-    pub piece_type: PieceType,
-    pub color: Color,
-}
-
-impl Piece {
-    pub fn convert_char_to_piece(c: char) -> PieceType {
-        match c.to_ascii_lowercase() {
-            'p' => PieceType::Pawn,
-            'r' => PieceType::Rook,
-            'n' => PieceType::Knight,
-            'b' => PieceType::Bishop,
-            'k' => PieceType::King,
-            'q' => PieceType::Queen,
-            _ => panic!("Can't convert character: {}", c),
-        }
-    }
-
-    pub fn convert_char_to_color(c: char) -> Color {
-        if c.is_lowercase() {
-            Color::Black
-        } else {
-            Color::White
-        }
-    }
-}
-
-impl Index<PieceType> for [Bitboard; PIECE_COUNT] {
+impl Index<Piece> for [Bitboard; PIECE_COUNT] {
     type Output = Bitboard;
 
-    fn index(&self, piece: PieceType) -> &Self::Output {
+    fn index(&self, piece: Piece) -> &Self::Output {
         match piece {
-            PieceType::Pawn => &self[0],
-            PieceType::Knight => &self[1],
-            PieceType::Bishop => &self[2],
-            PieceType::Rook => &self[3],
-            PieceType::Queen => &self[4],
-            PieceType::King => &self[5],
+            Piece::Pawn => &self[0],
+            Piece::Knight => &self[1],
+            Piece::Bishop => &self[2],
+            Piece::Rook => &self[3],
+            Piece::Queen => &self[4],
+            Piece::King => &self[5],
         }
     }
 }
 
-impl IndexMut<PieceType> for [Bitboard; PIECE_COUNT] {
-    fn index_mut(&mut self, piece: PieceType) -> &mut Self::Output {
+impl IndexMut<Piece> for [Bitboard; PIECE_COUNT] {
+    fn index_mut(&mut self, piece: Piece) -> &mut Self::Output {
         match piece {
-            PieceType::Pawn => &mut self[0],
-            PieceType::Knight => &mut self[1],
-            PieceType::Bishop => &mut self[2],
-            PieceType::Rook => &mut self[3],
-            PieceType::Queen => &mut self[4],
-            PieceType::King => &mut self[5],
+            Piece::Pawn => &mut self[0],
+            Piece::Knight => &mut self[1],
+            Piece::Bishop => &mut self[2],
+            Piece::Rook => &mut self[3],
+            Piece::Queen => &mut self[4],
+            Piece::King => &mut self[5],
         }
     }
 }
