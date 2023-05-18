@@ -1,3 +1,5 @@
+use crate::bitboard::Bitboard;
+
 pub fn print_board(num: u64) {
     use crate::bitboard::{RANKS, FILES};
 
@@ -12,4 +14,8 @@ pub fn print_board(num: u64) {
     }
     println!("    a  b  c  d  e  f  g  h");
     println!();
+}
+
+pub fn board_to_hex(bb: Bitboard) -> String {
+    format!("{:016x}", bb)
 }

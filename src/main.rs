@@ -4,11 +4,13 @@ mod moves;
 mod square;
 mod bitboard;
 mod util;
+mod table;
 use board::*;
 use moves::generate_moves;
 use pieces::{Piece, Color};
 use square::{square_to_algebraic, algebraic_to_square};
-use util::print_board;
+use util::{print_board, board_to_hex};
+use table::{Table, generate_knight_lookup_table, generate_king_lookup_table};
 
 fn main() {
     // Initialize the bitboard with some sample positions
@@ -27,5 +29,4 @@ fn main() {
     for m in moves {
         println!("FROM: {} TO: {} TYPE: {}", square_to_algebraic(m.from), square_to_algebraic(m.to), m.move_type);
     }
-    
 }
