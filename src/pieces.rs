@@ -1,4 +1,4 @@
-use std::ops::{Index, IndexMut};
+use std::ops::{Index, IndexMut, Not};
 use crate::bitboard::Bitboard;
 
 
@@ -92,6 +92,17 @@ impl IndexMut<Color> for [Bitboard; COLOR_COUNT] {
         match color {
             Color::White => &mut self[0],
             Color::Black => &mut self[1],
+        }
+    }
+}
+
+impl std::ops::Not for Color {
+    type Output = Color;
+
+    fn not(self) -> Self::Output {
+        match self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
         }
     }
 }

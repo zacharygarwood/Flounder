@@ -3,9 +3,11 @@ mod pieces;
 mod moves;
 mod square;
 mod bitboard;
+mod util;
 use board::*;
 use moves::generate_moves;
 use pieces::{Piece, Color};
+use util::print_board;
 
 fn main() {
     // Initialize the bitboard with some sample positions
@@ -24,20 +26,4 @@ fn main() {
     for m in moves {
         print_board(m)
     }
-}
-
-fn print_board(num: u64) {
-    use crate::bitboard::{RANKS, FILES};
-
-    for rank in (0..RANKS).rev() {
-        print!(" {} ", rank+1);
-        for file in 0..FILES {
-            let square = rank * 8 + file;
-            let bit = (num >> square) & 1;
-            print!(" {} ", bit);
-        }
-        println!();
-    }
-    println!("    a  b  c  d  e  f  g  h");
-    println!();
 }

@@ -1,9 +1,6 @@
-use std::ops::Index;
-
 use crate::pieces::{PieceType, Color, PIECE_COUNT, COLOR_COUNT};
 use crate::square::Square;
-use crate::bitboard::{Bitboard, RANKS, FILES, RANK_3, FILE_A, FILE_H};
-use crate::moves::Move;
+use crate::bitboard::{Bitboard};
 
 // Represents the chess board using bitboards
 pub struct Board {
@@ -78,9 +75,6 @@ impl Position {
         
         colors[White] = 0x000000000000ffff;
         colors[Black] = 0xffff000000000000;
-        
-        // DELETEME: Testing pawn captures
-        colors[Black] = colors[Black] | 0x0000000000880000;
 
         Self { pieces, colors}
     }

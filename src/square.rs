@@ -69,7 +69,7 @@ pub enum SquareIndex {
 }
 
 pub fn rank_file_to_index(rank: u8, file: u8) -> Square {
-    8 * rank + file
+    rank * 8 + file
 }
 
 pub fn square_to_file(s: Square) -> u8 {

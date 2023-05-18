@@ -1,5 +1,5 @@
 use crate::board::Board;
-use crate::bitboard::{Bitboard, RANKS, FILES, RANK_2, RANK_3, RANK_6, RANK_7, FILE_A, FILE_H};
+use crate::bitboard::{Bitboard, Shift, RANKS, FILES, RANK_2, RANK_3, RANK_6, RANK_7, FILE_A, FILE_H};
 use crate::pieces::{PieceType, Color};
 
 pub const NORTH: i8 = 8;
@@ -45,7 +45,7 @@ fn generate_psuedo_legal_pawn_moves(board: &Board, moves: &mut Vec<u64>) {
     use crate::pieces::{PieceType::*, Color::*};
 
     let color = board.active_color();
-    let pawns = board.bb(color, PieceType::Pawn);
+    let pawns = board.bb(color, Pawn);
     let direction = PawnDirection::new(color);
 
     generate_quiet_pawn_pushes(board, pawns, direction, moves);
@@ -57,11 +57,12 @@ fn generate_quiet_pawn_pushes(board: &Board, pawns: Bitboard, direction: PawnDir
     let empty_squares = board.bb_empty();
 
     // Generate single pawn pushes
-    let single_pushes = (pawns << direction.north) & empty_squares;
+    let single_pushes = pawns.shift(direction.north) & empty_squares;
 
     // Generate double pawn pushes
     let double_pawns = single_pushes & direction.rank_3;
-    let double_pushes = (double_pawns << direction.north) & empty_squares;
+    let double_pushes = double_pawns.shift(direction.north) & empty_squares;
+    
     moves.push(single_pushes);
     moves.push(double_pushes);
 
@@ -72,17 +73,11 @@ fn generate_pawn_captures(board: &Board, pawns: Bitboard, direction: PawnDirecti
     let pawns = pawns & !direction.rank_7;
     let color = board.active_color();
 
-    // FIXME: Change this to not be bad
-    let pawn_attacks = match color {
-        Color::White => ((pawns & !FILE_H) << NORTH + WEST) | ((pawns & !FILE_A) << NORTH + EAST),
-        Color::Black => ((pawns & !FILE_H) >> NORTH + EAST ) | ((pawns & !FILE_A) >> NORTH + WEST),
-    };
-    let enemy_pieces = match color {
-        Color::White => board.bb_color(Color::Black),
-        Color::Black => board.bb_color(Color::White),
-    };
-
+    // Generate valid pawn attacks
+    let pawn_attacks = pawns.shift(direction.north + WEST) | pawns.shift(direction.north + EAST);
+    let enemy_pieces = board.bb_color(!color);
     let valid_pawn_attacks = pawn_attacks & enemy_pieces;
+
     moves.push(valid_pawn_attacks);
 }
 
