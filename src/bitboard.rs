@@ -1,4 +1,5 @@
 use crate::moves::{NORTH, SOUTH, EAST, WEST};
+use crate::square::Square;
 
 pub type Bitboard = u64;
 
@@ -77,4 +78,31 @@ fn shift_left(bb: Bitboard, i: u8) -> u64 {
 
 fn shift_right(bb: Bitboard, i: u8) -> Bitboard {
     bb.checked_shr(u32::from(i)).unwrap_or(0)
+}
+
+pub struct BitboardIterator {
+    bitboard: Bitboard,
+}
+
+impl BitboardIterator {
+    pub fn new(bitboard: Bitboard) -> Self {
+        BitboardIterator { bitboard }
+    }
+}
+
+impl Iterator for BitboardIterator {
+    type Item = (Square, Bitboard);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.bitboard == 0 {
+            return None;
+        }
+
+        let least_significant_bit = self.bitboard & (!self.bitboard + 1);
+        let square = least_significant_bit.trailing_zeros() as u8;
+
+        self.bitboard ^= least_significant_bit;
+
+        Some((square, self.bitboard))
+    }
 }

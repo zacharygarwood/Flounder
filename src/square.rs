@@ -1,6 +1,6 @@
-pub type Square = u8;
+use std::f32::consts::SQRT_2;
 
-#[allow(dead_code)]
+pub type Square = u8;
 pub enum SquareIndex {
     A1 = 0,
     B1,
@@ -76,26 +76,23 @@ pub fn square_to_file(s: Square) -> u8 {
     s % 8
 }
 
-#[allow(dead_code)]
 pub fn square_to_rank(s: Square) -> u8 {
-    s % 8
+    s / 8
 }
 
 pub fn algebraic_to_square(alg: &str) -> Square {
     let mut s = alg.chars();
     let file = s.next().unwrap();
     let rank = s.next().unwrap();
-    let file = match file as char {
-        'a' => 0,
-        'b' => 1,
-        'c' => 2,
-        'd' => 3,
-        'e' => 4,
-        'f' => 5,
-        'g' => 6,
-        'h' => 7,
-        _ => 0,
-    };
-    let rank = char::to_digit(rank, 10).unwrap() as u8;
-    rank_file_to_index(rank - 1, file)
+    let file = file as u8 - 'a' as u8;
+    let rank = rank as u8 - '1' as u8;
+    rank_file_to_index(rank, file)
+}
+
+pub fn square_to_algebraic(square: Square) -> String {
+    let file = square_to_file(square);
+    let rank = square_to_rank(square);
+    let file_char = ('a' as u8 + file) as char;
+    let rank_char = ('1' as u8 + rank) as char;
+    format!("{}{}", file_char, rank_char)
 }

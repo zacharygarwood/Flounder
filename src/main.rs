@@ -7,6 +7,7 @@ mod util;
 use board::*;
 use moves::generate_moves;
 use pieces::{Piece, Color};
+use square::{square_to_algebraic, algebraic_to_square};
 use util::print_board;
 
 fn main() {
@@ -24,6 +25,7 @@ fn main() {
     // Generate and print the moves
     let moves = generate_moves(&board);
     for m in moves {
-        print_board(m)
+        println!("FROM: {} TO: {} TYPE: {}", square_to_algebraic(m.from), square_to_algebraic(m.to), m.move_type);
     }
+    
 }
