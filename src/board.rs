@@ -39,6 +39,7 @@ impl Board {
             self.position.bb_piece(piece)
         }
 
+    // Returns the color of the player to play
     pub fn active_color(&self) -> Color {
         self.active_color
     }

@@ -90,6 +90,7 @@ impl BitboardIterator {
     }
 }
 
+// Iterates through each 1 bit in the bitboard
 impl Iterator for BitboardIterator {
     type Item = (Square, Bitboard);
 

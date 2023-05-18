@@ -2,6 +2,8 @@ use crate::bitboard::{Bitboard, Shift, RANKS, FILES};
 use crate::moves::{NORTH, SOUTH, EAST, WEST};
 use crate::square::{rank_file_to_index, square_to_algebraic};
 use crate::util::{print_board, board_to_hex};
+use crate::square::Square;
+use crate::pieces::PieceType;
 
 pub struct Table {
     pub knight_lookup: [Bitboard; 64],
@@ -21,7 +23,7 @@ impl Magics {
 }
 
 impl Table {
-    pub fn new() -> Self {
+    pub fn init() -> Self {
         Self {
             knight_lookup: generate_knight_lookup_table(),
             king_lookup: generate_king_lookup_table(),
@@ -29,8 +31,21 @@ impl Table {
             rook_magics: Magics::new(), // TODO: need to implement magics
         }
     }
+
+    pub fn moves(&self, square: Square, piece: PieceType) -> Bitboard {
+        match piece {
+            PieceType::Knight => self.knight_lookup[square as usize],
+            PieceType::King => self.king_lookup[square as usize],
+            PieceType::Bishop => 0, // TODO: magic stuff 
+            PieceType::Rook => 0,
+            PieceType::Queen => 0,
+            _ => 0 // No need for Pawns as they are generated separately
+        }
+    }
 }
 
+
+// Used to populte knigh_lookup. Each generated attack set can be indexed by the square of the knight 
 pub fn generate_knight_lookup_table() -> [Bitboard; 64] {
     let mut table: [Bitboard; 64] = [0; 64];
     for rank in 0..RANKS {
@@ -52,6 +67,7 @@ pub fn generate_knight_lookup_table() -> [Bitboard; 64] {
     table
 }
 
+// Used to populte knigh_lookup. Each generated attack set can be indexed by the square of the king 
 pub fn generate_king_lookup_table() -> [Bitboard; 64] {
     let mut table: [Bitboard; 64] = [0; 64];
     for rank in 0..RANKS {
