@@ -1,10 +1,10 @@
 mod board;
-mod defs;
 mod pieces;
 mod moves;
 mod square;
 mod bitboard;
 use board::*;
+use moves::generate_moves;
 use pieces::{Piece, Color};
 
 fn main() {
@@ -20,7 +20,7 @@ fn main() {
 
     println!("Move positions: \n");
     // Generate and print the moves
-    let moves = board.generate_moves();
+    let moves = generate_moves(&board);
     for m in moves {
         print_board(m)
     }
@@ -28,7 +28,7 @@ fn main() {
 
 fn print_board(num: u64) {
     use crate::bitboard::{RANKS, FILES};
-    
+
     for rank in (0..RANKS).rev() {
         print!(" {} ", rank+1);
         for file in 0..FILES {

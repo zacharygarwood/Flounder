@@ -1,6 +1,9 @@
+use std::ops::Index;
+
 use crate::pieces::{PieceType, Color, PIECE_COUNT, COLOR_COUNT};
 use crate::square::Square;
 use crate::bitboard::{Bitboard, RANKS, FILES, RANK_3, FILE_A, FILE_H};
+use crate::moves::Move;
 
 // Represents the chess board using bitboards
 pub struct Board {
@@ -24,81 +27,34 @@ impl Board {
         }
     }
 
-    pub fn generate_moves(&self) -> Vec<u64> {
-        use crate::pieces::{PieceType::*, Color::*};
-
-        let mut moves = Vec::new();
-
-        // Generate moves for each piece type (pawns, knights, bishops, rooks, etc.)
-        // Example: White Pawns
-        let pawns = self.bb_piece(Pawn);
-        let pawn_moves = self.generate_pawn_moves();
-        moves.extend(pawn_moves);
-
-        // Generate moves for other piece types
-
-        moves
+    // Returns select pieces of a certain color e.g. white pawns
+    pub fn bb(&self, color: Color, piece: PieceType) -> Bitboard {
+        self.position.bb(color, piece)
     }
 
-    fn generate_pawn_moves(&self) -> Vec<u64> {
-        use crate::pieces::{PieceType::*, Color::*};
-
-        let mut moves = Vec::new();
-        let color = self.active_color;
-        let pawns = self.bb_piece(Pawn);
-        let empty_squares = !(self.bb_color(White) | self.bb_color(Black));
-
-        let forward_mask = match color {
-            Color::White => 8,
-            Color::Black => -8,
-        };
-        let left_attack_mask = match color {
-            Color::White => 7,
-            Color::Black => -9,
-        };
-        let right_attack_mask = match color {
-            Color::White => 9,
-            Color::Black => -7,
-        };
-
-        // Generate single pawn pushes
-        let single_pushes = (pawns << forward_mask) & empty_squares;
-        moves.push(single_pushes);
-        
-        // Generate double pawn pushes
-        let double_pawns = single_pushes & RANK_3;
-        let double_pushes = (double_pawns << forward_mask) & empty_squares;
-        moves.push(double_pushes);
-
-        // Generate pawn attacks
-        let pawn_attacks = match color {
-            Color::White => ((pawns & !FILE_H) << left_attack_mask) | ((pawns & !FILE_A) << right_attack_mask),
-            Color::Black => ((pawns & !FILE_H) >> right_attack_mask) | ((pawns & !FILE_A) >> left_attack_mask),
-        };
-        let enemy_pieces = match color {
-            Color::White => self.position.colors[Black],
-            Color::Black => self.position.colors[White],
-        };
-        let valid_pawn_attacks = pawn_attacks & enemy_pieces;
-        moves.push(valid_pawn_attacks);
-
-        moves
+    // Returns all pieces of a certain color e.g. white pieces
+    pub fn bb_color(&self, color: Color) -> Bitboard {
+        self.position.bb_color(color)
     }
 
-        // Returns select pieces of a certain color e.g. white pawns
-        pub fn bb(&self, color: Color, piece: PieceType) -> u64 {
-            self.position.bb(color, piece)
-        }
-    
-        // Returns all pieces of a certain color e.g. white pieces
-        pub fn bb_color(&self, color: Color) -> u64 {
-            self.position.bb_color(color)
-        }
-    
-        // Returns all pieces of a select type e.g. pawns
-        pub fn bb_piece(&self, piece: PieceType) -> u64 {
+    // Returns all pieces of a select type e.g. pawns
+    pub fn bb_piece(&self, piece: PieceType) -> Bitboard {
             self.position.bb_piece(piece)
         }
+
+    pub fn active_color(&self) -> Color {
+        self.active_color
+    }
+
+    // Bitboard of all empty spaces
+    pub fn bb_empty(&self) -> Bitboard {
+        !(self.bb_color(Color::White) | self.bb_color(Color::Black))
+    }
+
+    // Bitboard of all pieces
+    pub fn bb_all(&self) -> Bitboard {
+        self.bb_color(Color::White) | self.bb_color(Color::Black)
+    }
 }
 
 
