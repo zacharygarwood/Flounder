@@ -1,7 +1,6 @@
 use crate::bitboard::{Bitboard, Shift, RANKS, FILES};
 use crate::moves::{NORTH, SOUTH, EAST, WEST};
-use crate::square::{rank_file_to_square, square_to_algebraic};
-use crate::util::{print_board, board_to_hex};
+use crate::square::rank_file_to_square;
 use crate::square::Square;
 use crate::pieces::Piece;
 
