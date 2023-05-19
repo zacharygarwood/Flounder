@@ -16,13 +16,12 @@ impl MoveGenerator {
     }
 
     pub fn generate_moves(&self, board: &Board) -> Vec<Move>{
-
         let mut moves = Vec::new();
+        
         // Generate moves for each piece type (pawns, knights, bishops, rooks, etc.)
-        // self.generate_psuedo_legal_pawn_moves(board, &mut moves);
-
+        self.generate_psuedo_legal_pawn_moves(board, &mut moves);
         self.generate_psuedo_legal_moves(board, Piece::Knight, &mut moves);
-        // Generate moves for other piece types
+        self.generate_psuedo_legal_moves(board, Piece::King, &mut moves);
     
         moves
     }
@@ -72,7 +71,7 @@ impl MoveGenerator {
     
     fn extract_pawn_moves(&self, mut bitboard: Bitboard, offset: i8, move_type: MoveType, moves: &mut Vec<Move>) {
         let iter = BitboardIterator::new(bitboard);
-        for (square, _) in iter {
+        for square in iter {
             let m = Move {
                 to: square,
                 from: (square as i8 - offset) as u8,
@@ -85,18 +84,24 @@ impl MoveGenerator {
     fn generate_psuedo_legal_moves(&self, board: &Board, piece: Piece, moves: &mut Vec<Move>) {
         let color = board.active_color();
         let pieces = board.bb(color, piece);
+        let enemy_pieces = board.bb_color(!color);
+        let empty_squares = board.bb_empty();
     
         let iter = BitboardIterator::new(pieces);
-        for (square, _) in iter {
-            self.lookup.moves(square, piece);
+        for square in iter {
+            let destinations = self.lookup.moves(square, piece);
 
-            // TODO: Need to check for empty squares and enemy pieces for captures
+            let quiet_moves = destinations & empty_squares;
+            let capture_moves = destinations & enemy_pieces;
+
+            self.extract_moves(quiet_moves, square, MoveType::Quiet, moves);
+            self.extract_moves(capture_moves, square, MoveType::Capture, moves);
         }
     }
     
-    fn extract_moves(mut bitboard: Bitboard, from: u8, move_type: MoveType, moves: &mut Vec<Move>) {
+    fn extract_moves(&self, mut bitboard: Bitboard, from: u8, move_type: MoveType, moves: &mut Vec<Move>) {
         let iter = BitboardIterator::new(bitboard);
-        for (square, _) in iter {
+        for square in iter {
             let m = Move {
                 to: square,
                 from,

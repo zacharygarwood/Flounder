@@ -92,7 +92,7 @@ impl BitboardIterator {
 
 // Iterates through each 1 bit in the bitboard
 impl Iterator for BitboardIterator {
-    type Item = (Square, Bitboard);
+    type Item = Square;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.bitboard == 0 {
@@ -104,6 +104,6 @@ impl Iterator for BitboardIterator {
 
         self.bitboard ^= least_significant_bit;
 
-        Some((square, self.bitboard))
+        Some(square)
     }
 }
