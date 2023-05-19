@@ -3,16 +3,25 @@ use crate::pieces::{Piece, Color};
 use crate::square::{Square, algebraic_to_square};
 use core::result::Result;
 
-// pub fn fen_to_board(fen: &str) -> Board {
-//     let fen_parts: Vec<&str> = fen.split(' ').collect();
+pub fn fen_to_board(fen: &str) -> Board {
+    let fen_parts: Vec<&str> = fen.split(' ').collect();
 
-//     let piece_placement = parse_piece_placement(fen_parts[0]);
-//     let active_color = parse_active_color(fen_parts[1]);
-//     // let castling_ability = parse_castling_ability(fen_parts[2]);
-//     // let en_passant_target = parse_en_passant_target(fen_parts[3]);
-//     // let halfmove_clock = parse_halfmove_clock(fen_parts[4]);
-//     // let fullmove_counter = parse_fullmove_counter(fen_parts[5]);
-// }
+    let position = parse_piece_placement(fen_parts[0]).unwrap();
+    let active_color = parse_active_color(fen_parts[1]).unwrap();
+    let castling_ability = parse_castling_ability(fen_parts[2]).unwrap();
+    let en_passant_target = parse_en_passant_target(fen_parts[3]).unwrap();
+    let halfmove_clock = parse_halfmove_clock(fen_parts[4]);
+    let fullmove_counter = parse_fullmove_counter(fen_parts[5]);
+
+    Board {
+        position,
+        active_color,
+        castling_ability,
+        en_passant_target,
+        halfmove_clock,
+        fullmove_counter,
+    }
+}
 
 /*
 <Piece Placement> ::= <rank8>'/'<rank7>'/'<rank6>'/'<rank5>'/'<rank4>'/'<rank3>'/'<rank2>'/'<rank1>
@@ -97,7 +106,7 @@ fn parse_en_passant_target(en_passant_target: &str) -> Result<Option<Square>, St
 <Halfmove Clock> ::= <digit> {<digit>}
 <digit> ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
  */
-fn parse_halfmove_clock(halfmove_clock: &str) -> usize {
+fn parse_halfmove_clock(halfmove_clock: &str) -> u8 {
     halfmove_clock.parse().expect("Failed to parse halfmove clock from FEN")
 }
 
@@ -106,7 +115,7 @@ fn parse_halfmove_clock(halfmove_clock: &str) -> usize {
 <digit19> ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 <digit>   ::= '0' | <digit19>
  */
-fn parse_fullmove_counter(fullmove_counter: &str) -> usize {
+fn parse_fullmove_counter(fullmove_counter: &str) -> u8 {
     fullmove_counter.parse().expect("Failed to parse fullmove counter from FEN")
 }
 

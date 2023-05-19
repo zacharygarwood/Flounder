@@ -1,6 +1,6 @@
 use crate::bitboard::Bitboard;
 
-pub fn print_board(num: u64) {
+pub fn print_bitboard(num: u64) {
     use crate::bitboard::{RANKS, FILES};
 
     for rank in (0..RANKS).rev() {

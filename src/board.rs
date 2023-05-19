@@ -1,27 +1,22 @@
 use crate::pieces::{Piece, Color, PIECE_COUNT, COLOR_COUNT};
 use crate::square::Square;
 use crate::bitboard::{Bitboard, BitOperations};
+use crate::util::print_bitboard;
+use crate::fen::fen_to_board;
 
 // Represents the chess board using bitboards
 pub struct Board {
-    position: Position,
-    active_color: Color,
-    casting_ability: Castle,
-    en_passant_target: Option<Square>,
-    halfmove_clock: u8,
-    fullmove_counter: u8,
+    pub position: Position,
+    pub active_color: Color,
+    pub castling_ability: Castle,
+    pub en_passant_target: Option<Square>,
+    pub halfmove_clock: u8,
+    pub fullmove_counter: u8,
 }
 
 impl Board {
-    pub fn new() -> Self{
-        Self { 
-            position: Position::new(),
-            active_color: Color::White,
-            casting_ability: Castle::new(true, true, true, true),
-            en_passant_target: None,
-            halfmove_clock: 0,
-            fullmove_counter: 1,
-        }
+    pub fn new(fen: &str) -> Self{
+        fen_to_board(fen)
     }
 
     // Returns select pieces of a certain color e.g. white pawns
@@ -53,6 +48,32 @@ impl Board {
     pub fn bb_all(&self) -> Bitboard {
         self.bb_color(Color::White) | self.bb_color(Color::Black)
     }
+
+    pub fn print(&self) {
+        // TODO: Eventually use a 2D array of pieces to display the board instead of bitboards
+        println!("White pieces:\n");
+        print_bitboard(self.bb_color(Color::White));
+
+        println!("Black pieces:\n");
+        print_bitboard(self.bb_color(Color::Black));
+
+        println!("Active color: {}", self.active_color);
+
+        println!(
+            "Castling ability: {}{}{}{}",
+            if self.castling_ability.white_king { "K" } else { "" },
+            if self.castling_ability.white_queen { "Q" } else { "" },
+            if self.castling_ability.black_king { "k" } else { "" },
+            if self.castling_ability.black_queen { "q" } else { "" }
+        );
+        match self.en_passant_target {
+            Some(square) => println!("En Passant Target: {}", square),
+            None => println!("En Passant Target: None"),
+        }
+
+        println!("Halfmove clock: {}", self.halfmove_clock);
+        println!("Fullmove counter: {}\n", self.fullmove_counter);
+    }
 }
 
 
@@ -63,20 +84,9 @@ pub struct Position {
 
 impl Position {
     pub fn new() -> Self{
-        // use crate::pieces::{Piece::*, Color::*};
         let mut pieces = [0; PIECE_COUNT];
         let mut colors = [0; COLOR_COUNT];
-        
-        // pieces[Pawn] = 0x00ff00000000ff00;
-        // pieces[Knight] = 0x4200000000000042;
-        // pieces[Bishop] = 0x2400000000000024;
-        // pieces[Rook] = 0x8100000000000081;
-        // pieces[Queen] = 0x0800000000000008;
-        // pieces[King] = 0x1000000000000010;
-        
-        // colors[White] = 0x000000000000ffff;
-        // colors[Black] = 0xffff000000000000;
-
+    
         Self { pieces, colors}
     }
 
