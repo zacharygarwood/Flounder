@@ -93,13 +93,22 @@ fn parse_en_passant_target(en_passant_target: &str) -> Result<Option<Square>, St
     }
 }
 
-// fn parse_halfmove_clock(halfmove_clock: &str) -> usize {
+/*
+<Halfmove Clock> ::= <digit> {<digit>}
+<digit> ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+ */
+fn parse_halfmove_clock(halfmove_clock: &str) -> usize {
+    halfmove_clock.parse().expect("Failed to parse halfmove clock from FEN")
+}
 
-// }
-
-// fn parse_fullmove_counter(fullmove_counter: &str) -> usize {
-
-// }
+/*
+<Fullmove counter> ::= <digit19> {<digit>}
+<digit19> ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+<digit>   ::= '0' | <digit19>
+ */
+fn parse_fullmove_counter(fullmove_counter: &str) -> usize {
+    fullmove_counter.parse().expect("Failed to parse fullmove counter from FEN")
+}
 
 pub fn char_to_piece(c: char) -> Piece {
     match c.to_ascii_lowercase() {
