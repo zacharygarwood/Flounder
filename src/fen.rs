@@ -1,5 +1,6 @@
 use crate::board::{Board, Position, Castle};
 use crate::pieces::{Piece, Color};
+use crate::square::{Square, algebraic_to_square};
 use core::result::Result;
 
 // pub fn fen_to_board(fen: &str) -> Board {
@@ -13,7 +14,14 @@ use core::result::Result;
 //     // let fullmove_counter = parse_fullmove_counter(fen_parts[5]);
 // }
 
-// Format <rank8>'/'<rank7>'/'<rank6>'/'<rank5>'/'<rank4>'/'<rank3>'/'<rank2>'/'<rank1>
+/*
+<Piece Placement> ::= <rank8>'/'<rank7>'/'<rank6>'/'<rank5>'/'<rank4>'/'<rank3>'/'<rank2>'/'<rank1>
+<ranki>       ::= [<digit17>]<piece> {[<digit17>]<piece>} [<digit17>] | '8'
+<piece>       ::= <white Piece> | <black Piece>
+<digit17>     ::= '1' | '2' | '3' | '4' | '5' | '6' | '7'
+<white Piece> ::= 'P' | 'N' | 'B' | 'R' | 'Q' | 'K'
+<black Piece> ::= 'p' | 'n' | 'b' | 'r' | 'q' | 'k'
+ */
 fn parse_piece_placement(piece_placement: &str) -> Result<Position, String> {
     let mut position = Position::new();
     let pieces_placement_rank: Vec<&str> = piece_placement.split('/').collect();
@@ -40,7 +48,9 @@ fn parse_piece_placement(piece_placement: &str) -> Result<Position, String> {
     Ok(position)
 }
 
-// Format 'w' | 'b'
+/*
+<Side to move> ::= {'w' | 'b'}
+ */
 fn parse_active_color(active_color: &str) -> Result<Color, String> {
     let c = active_color.chars().next().unwrap();
     match c {
@@ -50,10 +60,12 @@ fn parse_active_color(active_color: &str) -> Result<Color, String> {
     }
 }
 
-// Format '-' | ['K'] ['Q'] ['k'] ['q']
-pub fn parse_castling_ability(castling_ability: &str) -> Result<Castle, String> {
+/*
+<Castling ability> ::= '-' | ['K'] ['Q'] ['k'] ['q'] (1..4)
+ */
+fn parse_castling_ability(castling_ability: &str) -> Result<Castle, String> {
     if castling_ability.chars().count() > 4 {
-        return Err("Invalid number castling characters in FEN".to_string())
+        return Err("Invalid number of castling characters in FEN".to_string())
     }
 
     // Rights will be off in the event of '-' and set on accordingly
@@ -64,9 +76,22 @@ pub fn parse_castling_ability(castling_ability: &str) -> Result<Castle, String> 
     Ok(castle_rights)
 }
 
-// fn parse_en_passant_target(en_passant_target: &str) -> Option<Square> {
+/*
+<En passant target square> ::= '-' | <epsquare>
+<epsquare>   ::= <fileLetter> <eprank>
+<fileLetter> ::= 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h'
+<eprank>     ::= '3' | '6'
+ */
+fn parse_en_passant_target(en_passant_target: &str) -> Result<Option<Square>, String> {
+    if en_passant_target.chars().count() > 2 {
+        return Err("Invalid number of en passant target characters in FEN".to_string())
+    }
 
-// }
+    match en_passant_target.chars().next().unwrap() {
+        '-' => Ok(None),
+        _ => Ok(Some(algebraic_to_square(&en_passant_target[0..2])))
+    }
+}
 
 // fn parse_halfmove_clock(halfmove_clock: &str) -> usize {
 
