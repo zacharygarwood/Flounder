@@ -28,6 +28,6 @@ fn main() {
     // Generate and print the moves
     let moves = move_gen.generate_moves(&board);
     for m in moves {
-        println!("FROM: {} TO: {} TYPE: {}", square_to_algebraic(m.from), square_to_algebraic(m.to), m.move_type);
+        println!("FROM: {} TO: {} PIECE: {} MOVE: {}", square_to_algebraic(m.from), square_to_algebraic(m.to), m.piece_type, m.move_type);
     }
 }

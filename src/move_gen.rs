@@ -1,7 +1,7 @@
 use crate::board::Board;
 use crate::bitboard::{Bitboard, BitboardIterator, Shift, RANK_2, RANK_3, RANK_6, RANK_7};
 use crate::table::Table;
-use crate::pieces::{Piece, Color};
+use crate::pieces::{Piece, Color, PromotionPieceIterator};
 use crate::moves::{Move, MoveType, NORTH, EAST, SOUTH, WEST};
 
 pub struct MoveGenerator {
@@ -35,8 +35,9 @@ impl MoveGenerator {
     
         self.generate_quiet_pawn_pushes(board, pawns, direction, moves);
         self.generate_pawn_captures(board, pawns, direction, moves);
+        self.generate_pawn_promotions(board, pawns, direction, moves);
     
-        // TODO: En passant, promotions
+        // TODO: En passant
     }
     
     fn generate_quiet_pawn_pushes(&self, board: &Board, pawns: Bitboard, direction: PawnDirection, moves: &mut Vec<Move>) {
@@ -51,8 +52,8 @@ impl MoveGenerator {
         let double_pushes = double_pawns.shift(direction.north) & empty_squares;
     
         // Store moves
-        self.extract_pawn_moves(single_pushes, direction.north, MoveType::Quiet, moves);
-        self.extract_pawn_moves(double_pushes, direction.north + direction.north, MoveType::Quiet, moves)
+        self.extract_pawn_moves(single_pushes, direction.north, Piece::Pawn, MoveType::Quiet, moves);
+        self.extract_pawn_moves(double_pushes, direction.north + direction.north, Piece::Pawn, MoveType::Quiet, moves)
     }
     
     fn generate_pawn_captures(&self, board: &Board, pawns: Bitboard, direction: PawnDirection, moves: &mut Vec<Move>) {
@@ -65,19 +66,57 @@ impl MoveGenerator {
         let right_pawn_attacks = pawns.shift(direction.north + EAST) & enemy_pieces;
         
         // Store moves
-        self.extract_pawn_moves(left_pawn_attacks, direction.north + WEST, MoveType::Capture, moves);
-        self.extract_pawn_moves(right_pawn_attacks, direction.north + EAST, MoveType::Capture, moves);
+        self.extract_pawn_moves(left_pawn_attacks, direction.north + WEST, Piece::Pawn, MoveType::Capture, moves);
+        self.extract_pawn_moves(right_pawn_attacks, direction.north + EAST, Piece::Pawn, MoveType::Capture, moves);
+    }
+
+    fn generate_pawn_promotions(&self, board: &Board, pawns: Bitboard, direction: PawnDirection, moves: &mut Vec<Move>) {
+        // Only look at pawns that can promote
+        let pawns = pawns & direction.rank_7;
+        let color = board.active_color();
+        let enemy_pieces = board.bb_color(!color);
+        let empty_squares = board.bb_empty();
+    
+        // Generate single pawn pushes
+        let single_pushes = pawns.shift(direction.north) & empty_squares;
+
+        // Generate valid pawn attacks
+        let left_pawn_attacks = pawns.shift(direction.north + WEST) & enemy_pieces;
+        let right_pawn_attacks = pawns.shift(direction.north + EAST) & enemy_pieces;
+        
+        // Store moves
+        self.extract_pawn_promotions(single_pushes, direction.north, MoveType::Promotion, moves);
+        self.extract_pawn_promotions(left_pawn_attacks, direction.north + WEST, MoveType::Promotion, moves);
+        self.extract_pawn_promotions(right_pawn_attacks, direction.north + EAST, MoveType::Promotion, moves);
     }
     
-    fn extract_pawn_moves(&self, mut bitboard: Bitboard, offset: i8, move_type: MoveType, moves: &mut Vec<Move>) {
+    // Pawns use an offset to find where they came from. piece_type is used for promotions for pawns.
+    fn extract_pawn_moves(&self, mut bitboard: Bitboard, offset: i8, piece_type: Piece, move_type: MoveType, moves: &mut Vec<Move>) {
         let iter = BitboardIterator::new(bitboard);
         for square in iter {
             let m = Move {
                 to: square,
                 from: (square as i8 - offset) as u8,
+                piece_type,
                 move_type,
             };
             moves.push(m);
+        }
+    }
+
+    fn extract_pawn_promotions(&self, mut bitboard: Bitboard, offset: i8, move_type: MoveType, moves: &mut Vec<Move>) {
+        let bb_iter = BitboardIterator::new(bitboard);
+        let promotion_pieces = PromotionPieceIterator::new();
+        for square in bb_iter {
+            for piece in promotion_pieces.clone() {
+                let m = Move {
+                    to: square,
+                    from: (square as i8 - offset) as u8,
+                    piece_type: piece,
+                    move_type,
+                };
+                moves.push(m);
+            }
         }
     }
     
@@ -94,17 +133,18 @@ impl MoveGenerator {
             let quiet_moves = destinations & empty_squares;
             let capture_moves = destinations & enemy_pieces;
 
-            self.extract_moves(quiet_moves, square, MoveType::Quiet, moves);
-            self.extract_moves(capture_moves, square, MoveType::Capture, moves);
+            self.extract_moves(quiet_moves, square, piece, MoveType::Quiet, moves);
+            self.extract_moves(capture_moves, square, piece, MoveType::Capture, moves);
         }
     }
     
-    fn extract_moves(&self, mut bitboard: Bitboard, from: u8, move_type: MoveType, moves: &mut Vec<Move>) {
+    fn extract_moves(&self, mut bitboard: Bitboard, from: u8, piece_type:Piece, move_type: MoveType, moves: &mut Vec<Move>) {
         let iter = BitboardIterator::new(bitboard);
         for square in iter {
             let m = Move {
                 to: square,
                 from,
+                piece_type,
                 move_type,
             };
             moves.push(m);

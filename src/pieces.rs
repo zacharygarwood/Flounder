@@ -21,6 +21,51 @@ pub enum Color {
     Black,
 }
 
+impl std::fmt::Display for Piece {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let piece_str = match self {
+            Piece::Pawn => "Pawn",
+            Piece::Knight => "Knight",
+            Piece::Bishop => "Bishop",
+            Piece::Rook => "Rook",
+            Piece::Queen => "Queen",
+            Piece::King => "King",
+        };
+        write!(f, "{}", piece_str)
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct PromotionPieceIterator {
+    current_piece: Piece,
+}
+
+impl PromotionPieceIterator {
+    pub fn new() -> Self {
+        PromotionPieceIterator {
+            current_piece: Piece::Pawn,
+        }
+    }
+}
+
+impl Iterator for PromotionPieceIterator {
+    type Item = Piece;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let next_piece = match self.current_piece {
+            Piece::Pawn => Piece::Knight,
+            Piece::Knight => Piece::Bishop,
+            Piece::Bishop => Piece::Rook,
+            Piece::Rook => Piece::Queen,
+            Piece::Queen => return None,
+            _ => unreachable!(),
+        };
+
+        self.current_piece = next_piece;
+        Some(next_piece)
+    }
+}
+
 impl Index<Piece> for [Bitboard; PIECE_COUNT] {
     type Output = Bitboard;
 
