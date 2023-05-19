@@ -7,13 +7,13 @@ use crate::pieces::{Piece, Color};
 
 //     let piece_placement = parse_piece_placement(fen_parts[0]);
 //     let active_color = parse_active_color(fen_parts[1]);
-//     let castling_ability = parse_castling_ability(fen_parts[2]);
-//     let en_passant_target = parse_en_passant_target(fen_parts[3]);
-//     let halfmove_clock = parse_halfmove_clock(fen_parts[4]);
-//     let fullmove_counter = parse_fullmove_counter(fen_parts[5]);
+//     // let castling_ability = parse_castling_ability(fen_parts[2]);
+//     // let en_passant_target = parse_en_passant_target(fen_parts[3]);
+//     // let halfmove_clock = parse_halfmove_clock(fen_parts[4]);
+//     // let fullmove_counter = parse_fullmove_counter(fen_parts[5]);
 // }
 
-pub fn parse_piece_placement(piece_placement: &str) -> Position {
+fn parse_piece_placement(piece_placement: &str) -> Position {
     let mut position = Position::new();
     let pieces_placement_rank: Vec<&str> = piece_placement.split('/').collect();
 
@@ -35,9 +35,14 @@ pub fn parse_piece_placement(piece_placement: &str) -> Position {
     position
 }
 
-// fn parse_active_color(active_color: &str) -> Color {
-
-// }
+pub fn parse_active_color(active_color: &str) -> Color {
+    let c = active_color.chars().next().unwrap();
+    match c {
+        'w' => Color::White,
+        'b' => Color::Black,
+        _ => panic!("Invalid character in fen active color")
+    }
+}
 
 // fn parse_castling_ability(castling_ability: &str) -> Castle {
 
