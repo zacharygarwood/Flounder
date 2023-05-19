@@ -1,5 +1,5 @@
 use crate::moves::{NORTH, SOUTH, EAST, WEST};
-use crate::square::Square;
+use crate::square::{Square, rank_file_to_square};
 
 pub type Bitboard = u64;
 
@@ -24,11 +24,12 @@ pub const FILE_F: Bitboard = FILE_E << 1;
 pub const FILE_G: Bitboard = FILE_F << 1;
 pub const FILE_H: Bitboard = FILE_G << 1;
 
-pub trait Shift {
+pub trait BitOperations {
     fn shift(&self, n: i8) -> Bitboard;
+    fn set_bit(&mut self, rank: u8, file: u8);
 }
 
-impl Shift for Bitboard {
+impl BitOperations for Bitboard {
     // Performs shifting used by non-sliding pieces
     fn shift(&self, dir: i8) -> Bitboard {
         if dir == NORTH {
@@ -68,6 +69,11 @@ impl Shift for Bitboard {
         } else {
             shift_right(*self, -dir as u8)
         }
+    }
+
+    fn set_bit(&mut self, rank: u8, file: u8) {
+        let square = rank_file_to_square(rank, file);
+        *self |= 1 << square;
     }
 }
 

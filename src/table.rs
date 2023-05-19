@@ -1,4 +1,4 @@
-use crate::bitboard::{Bitboard, Shift, RANKS, FILES};
+use crate::bitboard::{Bitboard, BitOperations, RANKS, FILES};
 use crate::moves::{NORTH, SOUTH, EAST, WEST};
 use crate::square::rank_file_to_square;
 use crate::square::Square;

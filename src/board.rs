@@ -1,15 +1,15 @@
 use crate::pieces::{Piece, Color, PIECE_COUNT, COLOR_COUNT};
 use crate::square::Square;
-use crate::bitboard::{Bitboard};
+use crate::bitboard::{Bitboard, BitOperations};
 
 // Represents the chess board using bitboards
 pub struct Board {
     position: Position,
     active_color: Color,
-    castling_availability: Castle,
-    en_passant: Option<Square>,
-    half_move: u8,
-    full_move: u8,
+    casting_ability: Castle,
+    en_passant_target: Option<Square>,
+    halfmove_clock: u8,
+    fullmove_counter: u8,
 }
 
 impl Board {
@@ -17,10 +17,10 @@ impl Board {
         Self { 
             position: Position::new(),
             active_color: Color::White,
-            castling_availability: Castle::new(),
-            en_passant: None,
-            half_move: 0,
-            full_move: 1,
+            casting_ability: Castle::new(),
+            en_passant_target: None,
+            halfmove_clock: 0,
+            fullmove_counter: 1,
         }
     }
 
@@ -63,19 +63,19 @@ pub struct Position {
 
 impl Position {
     pub fn new() -> Self{
-        use crate::pieces::{Piece::*, Color::*};
+        // use crate::pieces::{Piece::*, Color::*};
         let mut pieces = [0; PIECE_COUNT];
         let mut colors = [0; COLOR_COUNT];
         
-        pieces[Pawn] = 0x00ff00000000ff00;
-        pieces[Knight] = 0x4200000000000042;
-        pieces[Bishop] = 0x2400000000000024;
-        pieces[Rook] = 0x8100000000000081;
-        pieces[Queen] = 0x0800000000000008;
-        pieces[King] = 0x1000000000000010;
+        // pieces[Pawn] = 0x00ff00000000ff00;
+        // pieces[Knight] = 0x4200000000000042;
+        // pieces[Bishop] = 0x2400000000000024;
+        // pieces[Rook] = 0x8100000000000081;
+        // pieces[Queen] = 0x0800000000000008;
+        // pieces[King] = 0x1000000000000010;
         
-        colors[White] = 0x000000000000ffff;
-        colors[Black] = 0xffff000000000000;
+        // colors[White] = 0x000000000000ffff;
+        // colors[Black] = 0xffff000000000000;
 
         Self { pieces, colors}
     }
@@ -93,6 +93,11 @@ impl Position {
     // Returns all pieces of a select type e.g. pawns
     pub fn bb_piece(&self, piece: Piece) -> u64 {
         self.pieces[piece]
+    }
+
+    pub fn add_piece(&mut self, color: Color, piece: Piece, rank: u8, file: u8) {
+        self.colors[color].set_bit(rank, file);
+        self.pieces[piece].set_bit(rank, file);
     }
 }
 
