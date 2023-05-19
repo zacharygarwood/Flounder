@@ -17,7 +17,7 @@ impl Board {
         Self { 
             position: Position::new(),
             active_color: Color::White,
-            casting_ability: Castle::new(),
+            casting_ability: Castle::new(true, true, true, true),
             en_passant_target: None,
             halfmove_clock: 0,
             fullmove_counter: 1,
@@ -109,12 +109,22 @@ pub struct Castle {
 }
 
 impl Castle {
-    pub fn new() -> Self {
+    pub fn new(white_king: bool, white_queen: bool, black_king: bool, black_queen: bool) -> Self {
         Self {
-            white_king: true,
-            white_queen: true,
-            black_king: true,
-            black_queen: true,
+            white_king,
+            white_queen,
+            black_king,
+            black_queen,
         } 
+    }
+
+    pub fn set(&mut self, castle: char, ability: bool) {
+        match castle {
+            'K' => self.white_king = ability,
+            'Q' => self.white_queen = ability,
+            'k' => self.black_king = ability,
+            'q' => self.black_queen = ability,
+            _ => {} // Can ignore any other character
+        };
     }
 }

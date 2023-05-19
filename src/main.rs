@@ -12,7 +12,7 @@ use move_gen::MoveGenerator;
 use pieces::{Piece, Color};
 use square::{square_to_algebraic, algebraic_to_square};
 use util::{print_board, board_to_hex};
-use fen::parse_active_color;
+use fen::parse_castling_ability;
 
 fn main() {
     // Initialize the bitboard with some sample positions

@@ -1,5 +1,4 @@
-use crate::board::{Board, Position};
-use crate::bitboard::{RANKS, FILES};
+use crate::board::{Board, Position, Castle};
 use crate::pieces::{Piece, Color};
 
 // pub fn fen_to_board(fen: &str) -> Board {
@@ -13,6 +12,7 @@ use crate::pieces::{Piece, Color};
 //     // let fullmove_counter = parse_fullmove_counter(fen_parts[5]);
 // }
 
+// Format <rank8>'/'<rank7>'/'<rank6>'/'<rank5>'/'<rank4>'/'<rank3>'/'<rank2>'/'<rank1>
 fn parse_piece_placement(piece_placement: &str) -> Position {
     let mut position = Position::new();
     let pieces_placement_rank: Vec<&str> = piece_placement.split('/').collect();
@@ -35,7 +35,8 @@ fn parse_piece_placement(piece_placement: &str) -> Position {
     position
 }
 
-pub fn parse_active_color(active_color: &str) -> Color {
+// Format 'w' | 'b'
+fn parse_active_color(active_color: &str) -> Color {
     let c = active_color.chars().next().unwrap();
     match c {
         'w' => Color::White,
@@ -44,9 +45,15 @@ pub fn parse_active_color(active_color: &str) -> Color {
     }
 }
 
-// fn parse_castling_ability(castling_ability: &str) -> Castle {
-
-// }
+// Format '-' | ['K'] ['Q'] ['k'] ['q']
+pub fn parse_castling_ability(castling_ability: &str) -> Castle {
+    // Rights will be off in the event of '-' and set on accordingly
+    let mut castle_rights = Castle::new(false, false, false, false);
+    for c in castling_ability.chars() {
+        castle_rights.set(c, true);
+    }
+    castle_rights
+}
 
 // fn parse_en_passant_target(en_passant_target: &str) -> Option<Square> {
 
