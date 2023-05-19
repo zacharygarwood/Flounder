@@ -44,7 +44,7 @@ impl Table {
 }
 
 
-// Used to populte knigh_lookup. Each generated attack set can be indexed by the square of the knight 
+// Used to populte knight_lookup. Each generated attack set can be indexed by the square of the knight 
 pub fn generate_knight_lookup_table() -> [Bitboard; 64] {
     let mut table: [Bitboard; 64] = [0; 64];
     for rank in 0..RANKS {
@@ -66,7 +66,7 @@ pub fn generate_knight_lookup_table() -> [Bitboard; 64] {
     table
 }
 
-// Used to populte knigh_lookup. Each generated attack set can be indexed by the square of the king 
+// Used to populte king_lookup. Each generated attack set can be indexed by the square of the king 
 pub fn generate_king_lookup_table() -> [Bitboard; 64] {
     let mut table: [Bitboard; 64] = [0; 64];
     for rank in 0..RANKS {
