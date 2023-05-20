@@ -85,10 +85,13 @@ impl BitOperations for Bitboard {
         0
     }
 
+    // Creates a bitboard with one bit set at rank, file
     fn rank_file_to_bitboard(rank: u8, file: u8) -> Bitboard {
         1 << rank_file_to_square(rank, file)
     }
 
+    // Creates a bitboard with the edges opposite of rank, file set to 1
+    // Used in generating blocker masks as the edges do not need to be set
     fn rank_file_to_edge_mask(rank: u8, file: u8) -> Bitboard {
         let mut mask = Bitboard::empty();
 
