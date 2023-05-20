@@ -13,72 +13,65 @@ pub struct Table {
 }
 
 pub struct Magic {
-    pub rook_blocker_masks: [Bitboard; 64],
-    pub bishop_blocker_masks: [Bitboard; 64],
-    pub rook_blocker_boards: Vec<Vec<Bitboard>>, // size should be [64][4096]
-    pub bishop_blocker_boards: Vec<Vec<Bitboard>>, // size should be [64][512]
+    pub rook_attack_masks: [Bitboard; 64],
+    pub bishop_attack_masks: [Bitboard; 64],
+    pub rook_blockers: Vec<Vec<Bitboard>>, // size should be [64][4096]
+    pub bishop_blockers: Vec<Vec<Bitboard>>, // size should be [64][512]
 
 }
 
 impl Magic {
     pub fn new() -> Self {
-        let rook_blocker_masks = Self::generate_rook_blocker_masks();
-        let bishop_blocker_masks = Self::generate_bishop_blocker_masks();
-        let rook_blocker_boards = Self::generate_rook_blocker_boards(rook_blocker_masks);
-        let bishop_blocker_boards = Self::generate_bishop_blocker_boards(bishop_blocker_masks);
+        let rook_attack_masks = Self::generate_attack_masks(Piece::Rook);
+        let bishop_attack_masks = Self::generate_attack_masks(Piece::Bishop);
+        let rook_blockers = Self::generate_blockers(Piece::Rook, rook_attack_masks);
+        let bishop_blockers = Self::generate_blockers(Piece::Bishop, bishop_attack_masks);
 
         Self {
-            rook_blocker_masks,
-            bishop_blocker_masks,
-            rook_blocker_boards,
-            bishop_blocker_boards,
+            rook_attack_masks,
+            bishop_attack_masks,
+            rook_blockers,
+            bishop_blockers,
         }
     }
 
-    fn generate_rook_blocker_boards(blocker_mask: [Bitboard; 64]) -> Vec<Vec<Bitboard>> {
-        let mut rook_blocker_board = (0..64)
-            .map(|_| vec![0; 4096])
-            .collect::<Vec<Vec<Bitboard>>>();
+    fn generate_blockers(piece: Piece, attack_mask: [Bitboard; 64]) -> Vec<Vec<Bitboard>> {
+        let mut blocker_board;
+
+        match piece {
+            Piece::Bishop => {
+                blocker_board = (0..64)
+                    .map(|_| vec![0; 512])
+                    .collect::<Vec<Vec<Bitboard>>>();
+            },
+            _ => { // Rook is the only other option
+                blocker_board = (0..64)
+                    .map(|_| vec![0; 4096])
+                    .collect::<Vec<Vec<Bitboard>>>();
+            }
+        }
 
         for rank in 0..RANKS {
             for file in 0..FILES {
                 let square = rank_file_to_square(rank, file);
-                let bits = blocker_mask[square as usize].count_ones();
+                let bits = attack_mask[square as usize].count_ones();
 
                 for i in 0..(1 << bits) {
-                    rook_blocker_board[square as usize][i] = Self::generate_blocker_board(i as u8, blocker_mask[square as usize]);
+                    blocker_board[square as usize][i] = Self::generate_blocker_board(i as u8, attack_mask[square as usize]);
                 }
             }
         }
-        rook_blocker_board
+        blocker_board
     }
 
-    fn generate_bishop_blocker_boards(blocker_mask: [Bitboard; 64]) -> Vec<Vec<Bitboard>> {
-        let mut bishop_blocker_board = (0..64)
-            .map(|_| vec![0; 512])
-            .collect::<Vec<Vec<Bitboard>>>();
-        
-        for rank in 0..RANKS {
-            for file in 0..FILES {
-                let square = rank_file_to_square(rank, file);
-                let bits = blocker_mask[square as usize].count_ones();
-
-                for i in 0..(1 << bits) {
-                    bishop_blocker_board[square as usize][i] = Self::generate_blocker_board(i as u8, blocker_mask[square as usize]);
-                }
-            }
-        }
-        bishop_blocker_board
-    }
-
-    fn generate_blocker_board(index: u8, blocker_mask: Bitboard) -> Bitboard {
-        let mut blocker_board: Bitboard = blocker_mask;
+    fn generate_blocker_board(index: u8, attack_mask: Bitboard) -> Bitboard {
+        let mut blocker_board: Bitboard = attack_mask;
     
         let mut bit_index: i8 = 0;
         for rank in 0..RANKS {
             for file in 0..FILES {
                 let square = rank_file_to_square(rank, file);
-                if blocker_mask & Bitboard::square_to_bitboard(square) != 0 {
+                if attack_mask & Bitboard::square_to_bitboard(square) != 0 {
                     if index & Bitboard::square_to_bitboard(bit_index as u8) as u8 == 0 {
                         blocker_board &= !Bitboard::square_to_bitboard(square);
                     }
@@ -89,57 +82,81 @@ impl Magic {
         blocker_board
     }
 
-    fn generate_rook_blocker_masks() -> [Bitboard; 64] {
-        let mut rook_blocker_masks: [Bitboard; 64] = [0; 64];
+    fn generate_attack_masks(piece: Piece) -> [Bitboard; 64] {
+        let mut attack_masks: [Bitboard; 64] = [0; 64];
     
         for rank in 0..RANKS {
             for file in 0..FILES {
                 let square = rank_file_to_square(rank, file);
-                rook_blocker_masks[square as usize] = Self::generate_rook_blocker_mask(square);
+                match piece {
+                    Piece::Bishop => attack_masks[square as usize] = Self::generate_bishop_attack_mask_with_blockers_or_not(square, Bitboard::empty(), false),
+                    Piece::Rook => attack_masks[square as usize] = Self::generate_rook_attack_mask_with_blockers_or_not(square, Bitboard::empty(), false),
+                    _ => {}
+                };
             }
         }
-        rook_blocker_masks
+        attack_masks
     }
 
-    fn generate_bishop_blocker_masks() -> [Bitboard; 64] {
-        let mut bishop_blocker_masks: [Bitboard; 64] = [0; 64];
-    
-        for rank in 0..RANKS {
-            for file in 0..FILES {
-                let square = rank_file_to_square(rank, file);
-                bishop_blocker_masks[square as usize] = Self::generate_bishop_blocker_mask(square);
-            }
-        }
-        bishop_blocker_masks
-    }
-
-    fn generate_rook_blocker_mask(square: u8) -> Bitboard {
+    fn generate_rook_attack_mask_with_blockers_or_not(square: u8, blockers: Bitboard, block: bool) -> Bitboard {
         let mut mask: Bitboard = 0;
         let (rank, file) = square_to_rank_file(square);
     
-        // Generate mask for each rank
-        for r in 0..RANKS {
-            if r == rank {
-                continue; // Skip the current rank
+        // Generate mask in the bottom direction
+        let mut f = file as i8;
+        let mut r = rank as i8 - 1;
+        while r >= 0 {
+            let square_bb = Bitboard::rank_file_to_bitboard(r as u8, f as u8);
+            mask |= square_bb;
+            if block && blockers & square_bb != 0 {
+                break;
             }
-            let blocker_mask = Bitboard::rank_file_to_bitboard(r, file);
-            mask |= blocker_mask;
+            r -= 1;
         }
     
-        // Generate mask for each file
-        for f in 0..FILES {
-            if f == file {
-                continue; // Skip the current file
+        // Generate mask in the left direction
+        f = file as i8 - 1;
+        r = rank as i8;
+        while f >= 0 {
+            let square_bb = Bitboard::rank_file_to_bitboard(r as u8, f as u8);
+            mask |= square_bb;
+            if block && blockers & square_bb != 0 {
+                break;
             }
-            let blocker_mask = Bitboard::rank_file_to_bitboard(rank, f);
-            mask |= blocker_mask;
+            f -= 1;
         }
     
-        mask &= !Bitboard::rank_file_to_edge_mask(rank, file);
+        // Generate mask in the up direction
+        f = file as i8;
+        r = rank as i8 + 1;
+        while f >= 0 && r < 8 {
+            let square_bb = Bitboard::rank_file_to_bitboard(r as u8, f as u8);
+            mask |= square_bb;
+            if block && blockers & square_bb != 0 {
+                break;
+            }
+            r += 1;
+        }
+    
+        // Generate mask in the right direction
+        f = file as i8 + 1;
+        r = rank as i8;
+        while f < 8 && r < 8 {
+            let square_bb = Bitboard::rank_file_to_bitboard(r as u8, f as u8);
+            mask |= square_bb;
+            if block && blockers & square_bb != 0 {
+                break;
+            }
+            f += 1;
+        }
+
+        if !block {
+            mask &= !Bitboard::rank_file_to_edge_mask(rank, file);
+        }
         mask
     }
     
-    fn generate_bishop_blocker_mask(square: Square) -> Bitboard {
+    fn generate_bishop_attack_mask_with_blockers_or_not(square: Square, blockers: Bitboard, block: bool) -> Bitboard {
         let mut mask: Bitboard = 0;
         let (rank, file) = square_to_rank_file(square);
     
@@ -147,7 +164,11 @@ impl Magic {
         let mut f = file as i8 - 1;
         let mut r = rank as i8 - 1;
         while f >= 0 && r >= 0 {
-            mask |= Bitboard::rank_file_to_bitboard(r as u8, f as u8);
+            let square_bb = Bitboard::rank_file_to_bitboard(r as u8, f as u8);
+            mask |= square_bb;
+            if block && blockers & square_bb != 0 {
+                break;
+            }
             f -= 1;
             r -= 1;
         }
@@ -156,7 +177,11 @@ impl Magic {
         f = file as i8 + 1;
         r = rank as i8 - 1;
         while f < 8 && r >= 0 {
-            mask |= Bitboard::rank_file_to_bitboard(r as u8, f as u8);
+            let square_bb = Bitboard::rank_file_to_bitboard(r as u8, f as u8);
+            mask |= square_bb;
+            if block && blockers & square_bb != 0 {
+                break;
+            }
             f += 1;
             r -= 1;
         }
@@ -165,7 +190,11 @@ impl Magic {
         f = file as i8 - 1;
         r = rank as i8 + 1;
         while f >= 0 && r < 8 {
-            mask |= Bitboard::rank_file_to_bitboard(r as u8, f as u8);
+            let square_bb = Bitboard::rank_file_to_bitboard(r as u8, f as u8);
+            mask |= square_bb;
+            if block && blockers & square_bb != 0 {
+                break;
+            }
             f -= 1;
             r += 1;
         }
@@ -174,12 +203,18 @@ impl Magic {
         f = file as i8 + 1;
         r = rank as i8 + 1;
         while f < 8 && r < 8 {
-            mask |= Bitboard::rank_file_to_bitboard(r as u8, f as u8);
+            let square_bb = Bitboard::rank_file_to_bitboard(r as u8, f as u8);
+            mask |= square_bb;
+            if block && blockers & square_bb != 0 {
+                break;
+            }
             f += 1;
             r += 1;
         }
-    
-        mask &= !Bitboard::rank_file_to_edge_mask(rank, file);
+        
+        if !block {
+            mask &= !Bitboard::rank_file_to_edge_mask(rank, file);
+        }
         mask
     }
 }
