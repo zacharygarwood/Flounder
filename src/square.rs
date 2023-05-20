@@ -12,6 +12,17 @@ pub fn square_to_rank(s: Square) -> u8 {
     s / 8
 }
 
+pub fn square_to_rank_file(square: Square) -> (u8, u8) {
+    let rank = square / 8;
+    let file = square % 8;
+    (rank, file)
+}
+
+pub fn is_square_on_diagonal(square: u8, diagonal: u8) -> bool {
+    let (rank, file) = square_to_rank_file(square);
+    rank + file == diagonal
+}
+
 pub fn algebraic_to_square(alg: &str) -> Square {
     let mut s = alg.chars();
     let file = s.next().unwrap();

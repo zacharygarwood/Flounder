@@ -3,8 +3,8 @@ use crate::square::{Square, rank_file_to_square};
 
 pub type Bitboard = u64;
 
-pub const FILES: usize = 8;
-pub const RANKS: usize = 8;
+pub const FILES: u8 = 8;
+pub const RANKS: u8 = 8;
 
 pub const RANK_1: Bitboard = 0x00000000000000FF;
 pub const RANK_2: Bitboard = RANK_1 << 8;
@@ -27,6 +27,9 @@ pub const FILE_H: Bitboard = FILE_G << 1;
 pub trait BitOperations {
     fn shift(&self, n: i8) -> Bitboard;
     fn set_bit(&mut self, rank: u8, file: u8);
+    fn empty() -> Bitboard;
+    fn rank_file_to_bitboard(rank: u8, file: u8) -> Bitboard;
+    fn rank_file_to_edge_mask(rank: u8, file: u8) -> Bitboard;
 }
 
 impl BitOperations for Bitboard {
@@ -71,9 +74,37 @@ impl BitOperations for Bitboard {
         }
     }
 
+    // Set a bit on an existing Bitboard
     fn set_bit(&mut self, rank: u8, file: u8) {
         let square = rank_file_to_square(rank, file);
         *self |= 1 << square;
+    }
+
+    // Create an empty Bitboard
+    fn empty() -> Bitboard {
+        0
+    }
+
+    fn rank_file_to_bitboard(rank: u8, file: u8) -> Bitboard {
+        1 << rank_file_to_square(rank, file)
+    }
+
+    fn rank_file_to_edge_mask(rank: u8, file: u8) -> Bitboard {
+        let mut mask = Bitboard::empty();
+
+        match rank {
+            0 => mask |= RANK_8,
+            7 => mask |= RANK_1,
+            _ => mask |= RANK_1 | RANK_8,
+        };
+
+        match file {
+            0 => mask |= FILE_H,
+            7 => mask |= FILE_A,
+            _ => mask |= FILE_A | FILE_H,
+        };
+
+        mask
     }
 }
 

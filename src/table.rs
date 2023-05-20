@@ -1,6 +1,6 @@
 use crate::bitboard::{Bitboard, BitOperations, RANKS, FILES};
 use crate::moves::{NORTH, SOUTH, EAST, WEST};
-use crate::square::rank_file_to_square;
+use crate::square::{rank_file_to_square, square_to_rank_file, is_square_on_diagonal};
 use crate::square::Square;
 use crate::pieces::Piece;
 
@@ -86,4 +86,32 @@ pub fn generate_king_lookup_table() -> [Bitboard; 64] {
         }
     }
     table
+}
+
+
+
+pub fn generate_rook_blocker_masks(square: u8) -> Bitboard {
+    let mut masks: Bitboard = 0;
+    let (rank, file) = square_to_rank_file(square);
+
+    // Generate masks for each rank
+    for r in 0..RANKS {
+        if r == rank {
+            continue; // Skip the current rank
+        }
+        let blocker_mask = Bitboard::rank_file_to_bitboard(r, file);
+        masks |= blocker_mask;
+    }
+
+    // Generate masks for each file
+    for f in 0..FILES {
+        if f == file {
+            continue; // Skip the current file
+        }
+        let blocker_mask = Bitboard::rank_file_to_bitboard(rank, f);
+        masks |= blocker_mask;
+    }
+
+    masks &= !Bitboard::rank_file_to_edge_mask(rank, file);
+    masks
 }
