@@ -29,6 +29,7 @@ pub trait BitOperations {
     fn set_bit(&mut self, rank: u8, file: u8);
     fn empty() -> Bitboard;
     fn rank_file_to_bitboard(rank: u8, file: u8) -> Bitboard;
+    fn square_to_bitboard(square: Square) -> Bitboard;
     fn rank_file_to_edge_mask(rank: u8, file: u8) -> Bitboard;
 }
 
@@ -88,6 +89,11 @@ impl BitOperations for Bitboard {
     // Creates a bitboard with one bit set at rank, file
     fn rank_file_to_bitboard(rank: u8, file: u8) -> Bitboard {
         1 << rank_file_to_square(rank, file)
+    }
+
+    // Creates a bitboard with one bit set at rank, file
+    fn square_to_bitboard(square: u8) -> Bitboard {
+        1 << square
     }
 
     // Creates a bitboard with the edges opposite of rank, file set to 1
