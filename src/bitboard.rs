@@ -101,16 +101,16 @@ impl BitboardOperations for Bitboard {
     fn rank_file_to_edge_mask(rank: u8, file: u8) -> Bitboard {
         let mut mask = Bitboard::empty();
 
-        match rank {
-            0 => mask |= RANK_8,
-            7 => mask |= RANK_1,
-            _ => mask |= RANK_1 | RANK_8,
+        mask |= match rank {
+            0 => RANK_8,
+            7 => RANK_1,
+            _ => RANK_1 | RANK_8,
         };
 
-        match file {
-            0 => mask |= FILE_H,
-            7 => mask |= FILE_A,
-            _ => mask |= FILE_A | FILE_H,
+        mask |= match file {
+            0 => FILE_H,
+            7 => FILE_A,
+            _ => FILE_A | FILE_H,
         };
 
         mask

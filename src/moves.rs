@@ -1,4 +1,3 @@
-use crate::bitboard::{Bitboard, RANKS, FILES, RANK_2, RANK_3, RANK_6, RANK_7, FILE_A, FILE_H};
 use crate::pieces::Piece;
 
 pub const NORTH: i8 = 8;
@@ -8,17 +7,17 @@ pub const WEST: i8 = -EAST;
 
 #[derive(Debug)]
 pub struct Move {
-    pub from: u8,
-    pub to: u8,
-    pub move_type: MoveType,
-    pub piece_type: Piece,
+    to: u8,
+    from: u8,
+    move_type: MoveType,
+    piece_type: Piece,
 }
 
 impl Move {
-    pub fn new(from: u8, to: u8, piece_type: Piece, move_type: MoveType) -> Self {
+    pub fn new(to: u8, from: u8, piece_type: Piece, move_type: MoveType) -> Self {
         Self {
-            from,
             to,
+            from,
             piece_type,
             move_type,
         }

@@ -52,8 +52,8 @@ impl MoveGenerator {
         let double_pushes = double_pawns.shift(direction.north) & empty_squares;
     
         // Store moves
-        self.extract_pawn_moves(single_pushes, direction.north, Piece::Pawn, MoveType::Quiet, moves);
-        self.extract_pawn_moves(double_pushes, direction.north + direction.north, Piece::Pawn, MoveType::Quiet, moves)
+        self.extract_pawn_moves(single_pushes, direction.north, MoveType::Quiet, moves);
+        self.extract_pawn_moves(double_pushes, direction.north + direction.north, MoveType::Quiet, moves);
     }
     
     fn generate_pawn_captures(&self, board: &Board, pawns: Bitboard, direction: PawnDirection, moves: &mut Vec<Move>) {
@@ -66,8 +66,8 @@ impl MoveGenerator {
         let right_pawn_attacks = pawns.shift(direction.north + EAST) & enemy_pieces;
         
         // Store moves
-        self.extract_pawn_moves(left_pawn_attacks, direction.north + WEST, Piece::Pawn, MoveType::Capture, moves);
-        self.extract_pawn_moves(right_pawn_attacks, direction.north + EAST, Piece::Pawn, MoveType::Capture, moves);
+        self.extract_pawn_moves(left_pawn_attacks, direction.north + WEST, MoveType::Capture, moves);
+        self.extract_pawn_moves(right_pawn_attacks, direction.north + EAST, MoveType::Capture, moves);
     }
 
     fn generate_pawn_promotions(&self, board: &Board, pawns: Bitboard, direction: PawnDirection, moves: &mut Vec<Move>) {
@@ -91,15 +91,10 @@ impl MoveGenerator {
     }
     
     // Pawns use an offset to find where they came from. piece_type is used for promotions for pawns.
-    fn extract_pawn_moves(&self, mut bitboard: Bitboard, offset: i8, piece_type: Piece, move_type: MoveType, moves: &mut Vec<Move>) {
+    fn extract_pawn_moves(&self, mut bitboard: Bitboard, offset: i8, move_type: MoveType, moves: &mut Vec<Move>) {
         let iter = BitboardIterator::new(bitboard);
         for square in iter {
-            let m = Move {
-                to: square,
-                from: (square as i8 - offset) as u8,
-                piece_type,
-                move_type,
-            };
+            let m = Move::new(square, (square as i8 - offset) as u8, Piece::Pawn, move_type);
             moves.push(m);
         }
     }
@@ -109,12 +104,7 @@ impl MoveGenerator {
         let promotion_pieces = PromotionPieceIterator::new();
         for square in bb_iter {
             for piece in promotion_pieces.clone() {
-                let m = Move {
-                    to: square,
-                    from: (square as i8 - offset) as u8,
-                    piece_type: piece,
-                    move_type,
-                };
+                let m = Move::new(square, (square as i8 - offset) as u8, piece, move_type);
                 moves.push(m);
             }
         }
@@ -141,12 +131,7 @@ impl MoveGenerator {
     fn extract_moves(&self, mut bitboard: Bitboard, from: u8, piece_type:Piece, move_type: MoveType, moves: &mut Vec<Move>) {
         let iter = BitboardIterator::new(bitboard);
         for square in iter {
-            let m = Move {
-                to: square,
-                from,
-                piece_type,
-                move_type,
-            };
+            let m = Move::new(square, from, piece_type, move_type);
             moves.push(m);
         }
     }

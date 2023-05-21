@@ -43,20 +43,10 @@ impl Magic {
     }
 
     fn generate_blockers(piece: Piece, attack_mask: [Bitboard; 64]) -> Vec<Vec<Bitboard>> {
-        let mut blocker_board;
-
-        match piece {
-            Piece::Bishop => {
-                blocker_board = (0..64)
-                    .map(|_| vec![0; 512])
-                    .collect::<Vec<Vec<Bitboard>>>();
-            },
-            _ => { // Rook is the only other option
-                blocker_board = (0..64)
-                    .map(|_| vec![0; 4096])
-                    .collect::<Vec<Vec<Bitboard>>>();
-            }
-        }
+        let mut blocker_board = match piece {
+            Piece::Bishop => (0..64).map(|_| vec![0; 512]).collect::<Vec<Vec<Bitboard>>>(),
+            _ => (0..64).map(|_| vec![0; 4096]).collect::<Vec<Vec<Bitboard>>>(), // Rook is the only other option
+        };
 
         for rank in 0..RANKS {
             for file in 0..FILES {
@@ -251,14 +241,13 @@ impl Table {
 
 // Used to populte knight_lookup. Each generated attack set can be indexed by the square of the knight 
 pub fn generate_knight_lookup_table() -> [Bitboard; 64] {
-    let mut table: [Bitboard; 64] = [0; 64];
+    let mut table: [Bitboard; 64] = [Bitboard::empty(); 64];
     for rank in 0..RANKS {
         for file in 0..FILES {
-            let mut board: Bitboard = 0;
-            let square = rank_file_to_square(rank as u8, file as u8) as usize;
+            let square = rank_file_to_square(rank, file);
+            let board = Bitboard::square_to_bitboard(square);
 
-            board |= 1 << square;
-            table[square] |= board.shift(NORTH + NORTH + EAST) |
+            table[square as usize] |= board.shift(NORTH + NORTH + EAST) |
                 board.shift(NORTH + NORTH + WEST) |
                 board.shift(SOUTH + SOUTH + EAST) |
                 board.shift(SOUTH + SOUTH + WEST) |
@@ -273,14 +262,13 @@ pub fn generate_knight_lookup_table() -> [Bitboard; 64] {
 
 // Used to populte king_lookup. Each generated attack set can be indexed by the square of the king 
 pub fn generate_king_lookup_table() -> [Bitboard; 64] {
-    let mut table: [Bitboard; 64] = [0; 64];
+    let mut table: [Bitboard; 64] = [Bitboard::empty(); 64];
     for rank in 0..RANKS {
         for file in 0..FILES {
-            let mut board: Bitboard = 0;
-            let square = rank_file_to_square(rank as u8, file as u8) as usize;
+            let square = rank_file_to_square(rank, file);
+            let board = Bitboard::square_to_bitboard(square);
 
-            board |= 1 << square;
-            table[square] |= board.shift(NORTH) |
+            table[square as usize] |= board.shift(NORTH) |
                 board.shift(SOUTH) |
                 board.shift(EAST) |
                 board.shift(WEST) |

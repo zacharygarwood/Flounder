@@ -3,24 +3,24 @@ use crate::pieces::{Piece, Color};
 use crate::square::{Square, algebraic_to_square};
 use core::result::Result;
 
-pub fn fen_to_board(fen: &str) -> Board {
+pub fn fen_to_board(fen: &str) -> Result<Board, String> {
     let fen_parts: Vec<&str> = fen.split(' ').collect();
 
-    let position = parse_piece_placement(fen_parts[0]).unwrap();
-    let active_color = parse_active_color(fen_parts[1]).unwrap();
-    let castling_ability = parse_castling_ability(fen_parts[2]).unwrap();
-    let en_passant_target = parse_en_passant_target(fen_parts[3]).unwrap();
+    let position = parse_piece_placement(fen_parts[0])?;
+    let active_color = parse_active_color(fen_parts[1])?;
+    let castling_ability = parse_castling_ability(fen_parts[2])?;
+    let en_passant_target = parse_en_passant_target(fen_parts[3])?;
     let halfmove_clock = parse_halfmove_clock(fen_parts[4]);
     let fullmove_counter = parse_fullmove_counter(fen_parts[5]);
 
-    Board {
+    Ok(Board {
         position,
         active_color,
         castling_ability,
         en_passant_target,
         halfmove_clock,
         fullmove_counter,
-    }
+    })
 }
 
 /*

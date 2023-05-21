@@ -18,11 +18,4 @@ fn main() {
     let move_gen = MoveGenerator::new();
 
     board.print();
-
-    println!("Move positions: \n");
-    // Generate and print the moves
-    let moves = move_gen.generate_moves(&board);
-    for m in moves {
-        println!("FROM: {} TO: {} PIECE: {} MOVE: {}", square_to_algebraic(m.from), square_to_algebraic(m.to), m.piece_type, m.move_type);
-    }
 }

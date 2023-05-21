@@ -15,8 +15,27 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn new(fen: &str) -> Self{
-        fen_to_board(fen)
+    pub fn new(fen: &str) -> Self {
+        match fen_to_board(fen) {
+            Ok(board) => board,
+            Err(err) => {
+                println!("Error constructing FEN: {}", err);
+                println!("Setting board to default values");
+                Self::default()
+            },
+        }
+    }
+
+    // Creates the default board state
+    pub fn default() -> Self {
+        Self {
+            position: Position::default(),
+            active_color: Color::White,
+            castling_ability: Castle::new(true, true, true, true),
+            en_passant_target: None,
+            halfmove_clock: 0,
+            fullmove_counter: 1,
+        }
     }
 
     // Returns select pieces of a certain color e.g. white pawns
@@ -87,6 +106,24 @@ impl Position {
         let mut pieces = [0; PIECE_COUNT];
         let mut colors = [0; COLOR_COUNT];
     
+        Self { pieces, colors}
+    }
+
+    // Creates the default chess starting position
+    pub fn default() -> Self {
+        let mut pieces = [0; PIECE_COUNT];
+        let mut colors = [0; COLOR_COUNT];
+
+        pieces[Piece::Pawn] = 0x00ff00000000ff00;
+        pieces[Piece::Knight] = 0x4200000000000042;
+        pieces[Piece::Bishop] = 0x2400000000000024;
+        pieces[Piece::Rook] = 0x8100000000000081;
+        pieces[Piece::Queen] = 0x0800000000000008;
+        pieces[Piece::King] = 0x1000000000000010;
+        
+        colors[Color::White] = 0x000000000000ffff;
+        colors[Color::Black] = 0xffff000000000000;
+
         Self { pieces, colors}
     }
 
