@@ -35,9 +35,8 @@ impl MoveGenerator {
     
         self.generate_quiet_pawn_pushes(board, pawns, direction, moves);
         self.generate_pawn_captures(board, pawns, direction, moves);
-        self.generate_pawn_promotions(board, pawns, direction, moves);
-    
-        // TODO: En passant
+        self.generate_en_passants(board, pawns, direction, moves);
+        self.generate_promotions(board, pawns, direction, moves);
     }
     
     fn generate_quiet_pawn_pushes(&self, board: &Board, pawns: Bitboard, direction: PawnDirection, moves: &mut Vec<Move>) {
@@ -70,7 +69,24 @@ impl MoveGenerator {
         self.extract_pawn_moves(right_pawn_attacks, direction.north + EAST, MoveType::Capture, moves);
     }
 
-    fn generate_pawn_promotions(&self, board: &Board, pawns: Bitboard, direction: PawnDirection, moves: &mut Vec<Move>) {
+    fn generate_en_passants(&self, board: &Board, pawns: Bitboard, direction: PawnDirection, moves: &mut Vec<Move>) {
+        // Bitboard with en passant target set, or empty
+        let en_passant_target = match board.en_passant_target {
+            Some(square) => Bitboard::square_to_bitboard(square),
+            None => Bitboard::empty(),
+        };
+
+        // Generate valid pawn en passant attacks
+        let left_pawn_attacks = pawns.shift(direction.north + WEST) & en_passant_target;
+        let right_pawn_attacks = pawns.shift(direction.north + EAST) & en_passant_target;
+
+        // Store moves
+        self.extract_pawn_moves(left_pawn_attacks, direction.north + WEST, MoveType::EnPassant, moves);
+        self.extract_pawn_moves(right_pawn_attacks, direction.north + EAST, MoveType::EnPassant, moves);
+
+    }
+
+    fn generate_promotions(&self, board: &Board, pawns: Bitboard, direction: PawnDirection, moves: &mut Vec<Move>) {
         // Only look at pawns that can promote
         let pawns = pawns & direction.rank_7;
         let color = board.active_color();

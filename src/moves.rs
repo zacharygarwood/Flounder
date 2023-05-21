@@ -1,4 +1,4 @@
-use crate::pieces::Piece;
+use crate::{pieces::Piece, square::{square_to_algebraic, self}};
 
 pub const NORTH: i8 = 8;
 pub const EAST: i8 = 1;
@@ -9,8 +9,8 @@ pub const WEST: i8 = -EAST;
 pub struct Move {
     to: u8,
     from: u8,
-    move_type: MoveType,
     piece_type: Piece,
+    move_type: MoveType,
 }
 
 impl Move {
@@ -21,6 +21,10 @@ impl Move {
             piece_type,
             move_type,
         }
+    }
+
+    pub fn print(&self) {
+        println!("From: {} To: {} Piece: {} Move: {}", square_to_algebraic(self.from), square_to_algebraic(self.to), self.piece_type, self.move_type);
     }
 }
 
