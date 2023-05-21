@@ -1,6 +1,6 @@
 use crate::pieces::{Piece, Color, PIECE_COUNT, COLOR_COUNT};
 use crate::square::Square;
-use crate::bitboard::{Bitboard, BitOperations};
+use crate::bitboard::{Bitboard, BitboardOperations};
 use crate::util::print_bitboard;
 use crate::fen::fen_to_board;
 
@@ -112,10 +112,10 @@ impl Position {
 }
 
 pub struct Castle {
-    pub white_king: bool,
-    pub white_queen: bool,
-    pub black_king: bool,
-    pub black_queen: bool,
+    white_king: bool,
+    white_queen: bool,
+    black_king: bool,
+    black_queen: bool,
 }
 
 impl Castle {

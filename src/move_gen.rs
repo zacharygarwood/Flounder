@@ -1,5 +1,5 @@
 use crate::board::Board;
-use crate::bitboard::{Bitboard, BitboardIterator, BitOperations, RANK_2, RANK_3, RANK_6, RANK_7};
+use crate::bitboard::{Bitboard, BitboardIterator, BitboardOperations, RANK_2, RANK_3, RANK_6, RANK_7};
 use crate::table::Table;
 use crate::pieces::{Piece, Color, PromotionPieceIterator};
 use crate::moves::{Move, MoveType, NORTH, EAST, SOUTH, WEST};

@@ -24,7 +24,7 @@ pub const FILE_F: Bitboard = FILE_E << 1;
 pub const FILE_G: Bitboard = FILE_F << 1;
 pub const FILE_H: Bitboard = FILE_G << 1;
 
-pub trait BitOperations {
+pub trait BitboardOperations {
     fn shift(&self, n: i8) -> Bitboard;
     fn set_bit(&mut self, rank: u8, file: u8);
     fn empty() -> Bitboard;
@@ -33,7 +33,7 @@ pub trait BitOperations {
     fn rank_file_to_edge_mask(rank: u8, file: u8) -> Bitboard;
 }
 
-impl BitOperations for Bitboard {
+impl BitboardOperations for Bitboard {
     // Performs shifting used by non-sliding pieces
     fn shift(&self, dir: i8) -> Bitboard {
         if dir == NORTH {
@@ -97,7 +97,7 @@ impl BitOperations for Bitboard {
     }
 
     // Creates a bitboard with the edges opposite of rank, file set to 1
-    // Used in generating blocker masks as the edges do not need to be set
+    // Used in generating attack masks as the edges do not need to be set
     fn rank_file_to_edge_mask(rank: u8, file: u8) -> Bitboard {
         let mut mask = Bitboard::empty();
 

@@ -1,10 +1,17 @@
-use crate::bitboard::{Bitboard, BitOperations, RANKS, FILES};
+use crate::bitboard::{Bitboard, BitboardOperations, RANKS, FILES};
 use crate::moves::{NORTH, SOUTH, EAST, WEST};
 use crate::square::{rank_file_to_square, square_to_rank_file};
 use crate::square::{Square, square_to_algebraic};
 use crate::pieces::Piece;
 use crate::util::print_bitboard;
 
+
+/*
+
+FOR TOMORROW
+https://github.com/maksimKorzh/chess_programming/blob/master/src/magics/magics.c#L400
+
+ */
 pub struct Table {
     pub knight_lookup: [Bitboard; 64],
     pub king_lookup: [Bitboard; 64],
