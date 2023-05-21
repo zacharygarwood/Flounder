@@ -5,7 +5,7 @@ use crate::pieces::{Piece, Color, PromotionPieceIterator};
 use crate::moves::{Move, MoveType, NORTH, EAST, SOUTH, WEST};
 
 pub struct MoveGenerator {
-    lookup: Table
+    pub lookup: Table
 }
 
 impl MoveGenerator {
@@ -22,6 +22,9 @@ impl MoveGenerator {
         self.generate_psuedo_legal_pawn_moves(board, &mut moves);
         self.generate_psuedo_legal_moves(board, Piece::Knight, &mut moves);
         self.generate_psuedo_legal_moves(board, Piece::King, &mut moves);
+        self.generate_psuedo_legal_moves(board, Piece::Bishop, &mut moves);
+        self.generate_psuedo_legal_moves(board, Piece::Rook, &mut moves);
+        self.generate_psuedo_legal_moves(board, Piece::Queen, &mut moves);
     
         moves
     }
@@ -134,7 +137,10 @@ impl MoveGenerator {
     
         let iter = BitboardIterator::new(pieces);
         for square in iter {
-            let destinations = self.lookup.moves(square, piece);
+            let destinations = match piece {
+                Piece:: Knight | Piece::King => self.lookup.non_sliding_moves(square, piece),
+                _ => self.lookup.sliding_moves(square, board.bb_all(), piece)
+            };
 
             let quiet_moves = destinations & empty_squares;
             let capture_moves = destinations & enemy_pieces;

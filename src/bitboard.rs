@@ -5,6 +5,7 @@ pub type Bitboard = u64;
 
 pub const FILES: u8 = 8;
 pub const RANKS: u8 = 8;
+pub const SQUARES: Square = 64;
 
 pub const RANK_1: Bitboard = 0x00000000000000FF;
 pub const RANK_2: Bitboard = RANK_1 << 8;
