@@ -1,6 +1,6 @@
 use crate::pieces::{Piece, Color, PIECE_COUNT, COLOR_COUNT};
 use crate::square::Square;
-use crate::bitboard::{Bitboard, BitboardOperations};
+use crate::bitboard::{Bitboard, BitboardOperations, WHITE_QUEEN_SIDE, WHITE_KING_SIDE, BLACK_QUEEN_SIDE, BLACK_KING_SIDE};
 use crate::util::print_bitboard;
 use crate::fen::fen_to_board;
 
@@ -56,6 +56,13 @@ impl Board {
     // Returns the color of the player to play
     pub fn active_color(&self) -> Color {
         self.active_color
+    }
+
+    pub fn castling_ability(&self, color: Color) -> (bool, bool) {
+        match color {
+            Color::White => (self.castling_ability.white_king, self.castling_ability.white_queen),
+            Color::Black => (self.castling_ability.black_king, self.castling_ability.black_queen),
+        }
     }
 
     // Bitboard of all empty spaces
@@ -148,6 +155,7 @@ impl Position {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
 pub struct Castle {
     white_king: bool,
     white_queen: bool,

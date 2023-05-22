@@ -1,8 +1,9 @@
 use crate::board::Board;
-use crate::bitboard::{Bitboard, BitboardIterator, BitboardOperations, RANK_2, RANK_3, RANK_6, RANK_7};
+use crate::bitboard::{Bitboard, BitboardIterator, BitboardOperations, RANK_2, RANK_3, RANK_6, RANK_7, WHITE_KING_SIDE, WHITE_QUEEN_SIDE, BLACK_KING_SIDE, BLACK_QUEEN_SIDE};
 use crate::table::Table;
 use crate::pieces::{Piece, Color, PromotionPieceIterator};
 use crate::moves::{Move, MoveType, NORTH, EAST, SOUTH, WEST};
+use crate::square::{C1, C8, E1, E8, G1, G8};
 
 pub struct MoveGenerator {
     pub lookup: Table
@@ -18,18 +19,19 @@ impl MoveGenerator {
     pub fn generate_moves(&self, board: &Board) -> Vec<Move>{
         let mut moves = Vec::new();
         
-        // Generate moves for each piece type (pawns, knights, bishops, rooks, etc.)
-        self.generate_psuedo_legal_pawn_moves(board, &mut moves);
-        self.generate_psuedo_legal_moves(board, Piece::Knight, &mut moves);
-        self.generate_psuedo_legal_moves(board, Piece::King, &mut moves);
-        self.generate_psuedo_legal_moves(board, Piece::Bishop, &mut moves);
-        self.generate_psuedo_legal_moves(board, Piece::Rook, &mut moves);
-        self.generate_psuedo_legal_moves(board, Piece::Queen, &mut moves);
+        // Generate moves for each piece type
+        self.generate_pseudo_legal_castles(board, &mut moves);
+        self.generate_pseudo_legal_pawn_moves(board, &mut moves);
+        self.generate_pseudo_legal_moves(board, Piece::King, &mut moves);
+        self.generate_pseudo_legal_moves(board, Piece::Knight, &mut moves);
+        self.generate_pseudo_legal_moves(board, Piece::Bishop, &mut moves);
+        self.generate_pseudo_legal_moves(board, Piece::Rook, &mut moves);
+        self.generate_pseudo_legal_moves(board, Piece::Queen, &mut moves);
     
         moves
     }
     
-    fn generate_psuedo_legal_pawn_moves(&self, board: &Board, moves: &mut Vec<Move>) {
+    fn generate_pseudo_legal_pawn_moves(&self, board: &Board, moves: &mut Vec<Move>) {
         use crate::pieces::Piece::*;
     
         let color = board.active_color();
@@ -113,8 +115,8 @@ impl MoveGenerator {
     fn extract_pawn_moves(&self, mut bitboard: Bitboard, offset: i8, move_type: MoveType, moves: &mut Vec<Move>) {
         let iter = BitboardIterator::new(bitboard);
         for square in iter {
-            let m = Move::new(square, (square as i8 - offset) as u8, Piece::Pawn, move_type);
-            moves.push(m);
+            let mv = Move::new(square, (square as i8 - offset) as u8, Piece::Pawn, move_type);
+            moves.push(mv);
         }
     }
 
@@ -123,13 +125,58 @@ impl MoveGenerator {
         let promotion_pieces = PromotionPieceIterator::new();
         for square in bb_iter {
             for piece in promotion_pieces.clone() {
-                let m = Move::new(square, (square as i8 - offset) as u8, piece, move_type);
-                moves.push(m);
+                let mv = Move::new(square, (square as i8 - offset) as u8, piece, move_type);
+                moves.push(mv);
             }
         }
     }
+
+    fn generate_pseudo_legal_castles(&self, board: &Board, moves: &mut Vec<Move>) {
+        let color = board.active_color();
+        let all_pieces = board.bb_all();
+        let (king_side_rights, queen_side_rights) = board.castling_ability(color);
+
+        let (king_side_mask, queen_side_mask) = match color {
+            Color::White => (WHITE_KING_SIDE, WHITE_QUEEN_SIDE),
+            Color::Black => (BLACK_KING_SIDE, BLACK_QUEEN_SIDE),
+        };
+
+        let king_side_occupancy = king_side_mask & all_pieces;
+        let queen_side_occupancy = queen_side_mask & all_pieces;
+
+        // Castle king side if they have the rights and nothing blocks
+        if king_side_rights && king_side_occupancy == 0 {
+            self.extract_castles(color, Piece::King, MoveType::Castle, moves);
+        }
+
+        // Castle queen side if they have the rights and nothing blocks
+        if queen_side_rights && queen_side_occupancy == 0 {
+            self.extract_castles(color, Piece::Queen, MoveType::Castle, moves);
+        }
+    }
+
+    // The parameter side represents the side to castle on
+    fn extract_castles(&self, color: Color, side: Piece, move_type: MoveType, moves: &mut Vec<Move>) {
+        let (starting_square, king_side_square, queen_side_square) = match color {
+            Color::White => (E1, G1, C1),
+            Color::Black => (E8, G8, C8),
+        };
+
+        // King side or Queen side
+        match side {
+            Piece::King => {
+                let mv = Move::new(king_side_square, starting_square as u8, Piece::King, move_type);
+                moves.push(mv);
+            },
+            Piece::Queen => {
+                let mv = Move::new(queen_side_square, starting_square as u8, Piece::King, move_type);
+                moves.push(mv);
+            },
+            _ => {} // Only care about King and Queen for king side and queen side castling respectively
+        };
+    }
     
-    fn generate_psuedo_legal_moves(&self, board: &Board, piece: Piece, moves: &mut Vec<Move>) {
+    fn generate_pseudo_legal_moves(&self, board: &Board, piece: Piece, moves: &mut Vec<Move>) {
         let color = board.active_color();
         let pieces = board.bb(color, piece);
         let enemy_pieces = board.bb_color(!color);
@@ -153,8 +200,8 @@ impl MoveGenerator {
     fn extract_moves(&self, mut bitboard: Bitboard, from: u8, piece_type:Piece, move_type: MoveType, moves: &mut Vec<Move>) {
         let iter = BitboardIterator::new(bitboard);
         for square in iter {
-            let m = Move::new(square, from, piece_type, move_type);
-            moves.push(m);
+            let mv = Move::new(square, from, piece_type, move_type);
+            moves.push(mv);
         }
     }
 }

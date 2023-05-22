@@ -25,6 +25,11 @@ pub const FILE_F: Bitboard = FILE_E << 1;
 pub const FILE_G: Bitboard = FILE_F << 1;
 pub const FILE_H: Bitboard = FILE_G << 1;
 
+pub const WHITE_KING_SIDE: Bitboard = 0x0000000000000060;
+pub const WHITE_QUEEN_SIDE: Bitboard = 0x000000000000000E;
+pub const BLACK_KING_SIDE: Bitboard = 0x6000000000000000;
+pub const BLACK_QUEEN_SIDE: Bitboard = 0x0E00000000000000;
+
 pub trait BitboardOperations {
     fn shift(&self, n: i8) -> Bitboard;
     fn set_bit(&mut self, rank: u8, file: u8);
