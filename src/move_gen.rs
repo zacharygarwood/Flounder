@@ -197,7 +197,7 @@ impl MoveGenerator {
         }
     }
     
-    fn extract_moves(&self, mut bitboard: Bitboard, from: u8, piece_type:Piece, move_type: MoveType, moves: &mut Vec<Move>) {
+    fn extract_moves(&self, bitboard: Bitboard, from: u8, piece_type:Piece, move_type: MoveType, moves: &mut Vec<Move>) {
         let iter = BitboardIterator::new(bitboard);
         for square in iter {
             let mv = Move::new(square, from, piece_type, move_type);
