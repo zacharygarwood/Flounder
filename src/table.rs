@@ -31,8 +31,139 @@ const BISHOP_RELEVANT_BITS: [usize; 64] = [
     6, 5, 5, 5, 5, 5, 5, 6
 ];
 
-// Random number used in random number generation
-static STATE: u64 = 1804289383; 
+const ROOK_MAGICS: [u64; 64] = [
+    0x208000211080c000,
+    0x8040024610002000,
+    0x80100020008148,
+    0x1800c0800801000,
+    0x20020160010a408,
+    0x100340008120100,
+    0x80460011000c80,
+    0xd08000d08001a500,
+    0x1805002080010040,
+    0x440005002a000,
+    0x8a40808010002000,
+    0x9021000910022100,
+    0x209001058000501,
+    0x20008a4100200,
+    0x2004124880200,
+    0x3050801100004080,
+    0x608000804000,
+    0x10104000600140,
+    0x4013010010200040,
+    0xc808008001004,
+    0x1000910004080100,
+    0x48880800c000200,
+    0x22400c002210081d,
+    0x21020a0000440489,
+    0x80018080224002,
+    0x2088400500208903,
+    0x4c08a0200102040,
+    0x4000100080800800,
+    0x180080800400,
+    0xc041000300281400,
+    0x2a020400102809,
+    0x20801080004100,
+    0x240040008080002b,
+    0xa902400188802002,
+    0x1110408202002350,
+    0xa001000a1001900,
+    0x908040080800802,
+    0x1103104088010420,
+    0x1000081184001022,
+    0x88000e2800700,
+    0x4002a049818008,
+    0x2082830200220042,
+    0x22002011820042,
+    0x202200418a0010,
+    0x210501080011002c,
+    0x1600120004008080,
+    0x4000810268040010,
+    0x43000281410022,
+    0x2446181020200,
+    0xc88400020008e80,
+    0xe0004010080040,
+    0x81ae201001020900,
+    0x2004004480080080,
+    0x10c800200240080,
+    0x1080180510020c00,
+    0xa0098504014200,
+    0x100800024403101,
+    0x540008023001045,
+    0x801a00a00408012,
+    0x10c0890010021,
+    0x202000811201c0a,
+    0x201000884002251,
+    0x301000184020003,
+    0x3008805400238102,
+];
+
+const BISHOP_MAGICS: [u64; 64] = [
+    0x9a0a00f19002080,
+    0x1010030b00a000,
+    0x209434040a480200,
+    0x1e2411c204320100,
+    0x44142080034004,
+    0x20282a0080202,
+    0x12081202110000,
+    0x2202808082840,
+    0x404064ec042140,
+    0x1084038c0048,
+    0x9102400484600,
+    0x880082080201000,
+    0x1030820211020000,
+    0x2008484130105006,
+    0x40412280c220880,
+    0x10642022084,
+    0x90600028c2d00200,
+    0x244092811082200,
+    0x32100180208a200,
+    0x1000868806004015,
+    0x85000090401204,
+    0x1006000048040400,
+    0x904000100880402,
+    0x460c0900420260,
+    0x208044008201800,
+    0x4010028008020400,
+    0x1880010005010,
+    0xc004000a0210c4,
+    0x1a084004880a018,
+    0x1019010452008180,
+    0x28022000421205,
+    0x4002002aa4888808,
+    0x80420a0a0080200,
+    0x518033004148400,
+    0xc210401002a0800,
+    0x20004c0400280210,
+    0x9011010400420020,
+    0x8085010082008c,
+    0x8c0c2412414100,
+    0x8084104a02824121,
+    0x402401204a011085,
+    0xa04040404001200,
+    0x4200086888081000,
+    0xe22030141088800,
+    0x2008206009021880,
+    0x80ca0aa101010200,
+    0x812004010a014140,
+    0x44010242000500,
+    0x402a180404440042,
+    0x8000848805508020,
+    0x80a201c2080060,
+    0x5402822880204,
+    0x200c100a120014,
+    0x1404406448008004,
+    0x820891001144008,
+    0x5126080600820000,
+    0x60a20810843084,
+    0x84010108424200,
+    0x100101080942,
+    0x4000000000940400,
+    0x8020680124208200,
+    0x4000488900100,
+    0x21342020015200a0,
+    0x1194108202040410,
+];
 
 pub struct Table {
     pub knight_lookup: [Bitboard; 64],
@@ -51,8 +182,10 @@ pub struct Magic {
 
 impl Magic {
     pub fn new() -> Self {
-        let bishop_magics = Self::init_magics(Piece::Bishop);
-        let rook_magics = Self::init_magics(Piece::Rook);
+        // To initialize new magics to Self::init_magics(Piece::Type)
+        // Going to use precomputed magics in BISHOP_MAGICS and ROOK_MAGICS
+        let bishop_magics = BISHOP_MAGICS;
+        let rook_magics = ROOK_MAGICS;
         let (bishop_attack_masks, bishop_attacks) = Self::init_slider_attacks(Piece::Bishop, bishop_magics);
         let (rook_attack_masks, rook_attacks) = Self::init_slider_attacks(Piece::Rook, rook_magics);
 
@@ -103,7 +236,7 @@ impl Magic {
 
         // Generate attack masks for each occupancy variation
         for i in 0..occupancy_variations {
-            occupancies[i] = Self::generate_occupancy_board(i as u8, attack_mask);
+            occupancies[i] = Self::generate_occupancy_board(i, attack_mask);
             attacks[i] = Self::generate_attack_mask(piece, square, occupancies[i], true);
         }
 
@@ -127,7 +260,7 @@ impl Magic {
 
             // Found a magic number
             if !fail {
-                println!("magic: {}", magic);
+                println!("Magic: 0x{},", format!("{:x}", magic));
                 return magic;
             }
         } 
@@ -158,7 +291,7 @@ impl Magic {
             // Create the piece attacks by mapping a certain (occupancy * magic) shifted to the attacks 
             let occupancy_variations = 1 << relevant_bits;
             for i in 0..occupancy_variations {
-                let occupancy = Self::generate_occupancy_board(i as u8, attack_mask);
+                let occupancy = Self::generate_occupancy_board(i, attack_mask);
                 let magic_index = occupancy.wrapping_mul(magics[square as usize]) >> (64 - relevant_bits);
                 piece_attacks[square as usize][magic_index as usize] = Self::generate_attack_mask(piece, square, occupancy, true);
             }
@@ -166,13 +299,13 @@ impl Magic {
         (piece_masks, piece_attacks)
     }
 
-    fn generate_occupancy_board(index: u8, attack_mask: Bitboard) -> Bitboard {
+    fn generate_occupancy_board(index: usize, attack_mask: Bitboard) -> Bitboard {
         let mut blocker_board: Bitboard = attack_mask;
     
         let mut bit_index: i8 = 0;
         for square in 0..SQUARES {
             if attack_mask & Bitboard::square_to_bitboard(square) != 0 {
-                if index & Bitboard::square_to_bitboard(bit_index as u8) as u8 == 0 {
+                if index & Bitboard::square_to_bitboard(bit_index as u8) as usize == 0 {
                     blocker_board &= !Bitboard::square_to_bitboard(square);
                 }
                 bit_index += 1;
