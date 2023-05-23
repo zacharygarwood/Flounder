@@ -3,7 +3,7 @@ use crate::bitboard::{Bitboard, BitboardIterator, BitboardOperations, RANK_2, RA
 use crate::table::Table;
 use crate::pieces::{Piece, Color, PromotionPieceIterator};
 use crate::moves::{Move, MoveType, NORTH, EAST, SOUTH, WEST};
-use crate::square::{C1, C8, E1, E8, G1, G8};
+use crate::square::{Square, C1, C8, E1, E8, G1, G8};
 
 pub struct MoveGenerator {
     pub lookup: Table
@@ -199,6 +199,44 @@ impl MoveGenerator {
         for square in iter {
             let mv = Move::new(square, from, piece_type, move_type);
             moves.push(mv);
+        }
+    }
+
+    // Returns a bitboard with all pieces attacking a certain square
+    pub fn attacks_to(&self, square: Square, board: Board) -> Bitboard {
+        let color = board.active_color();
+        let occupancy = board.bb_all() & !board.bb(color, Piece::King);
+
+        // Get all attacks from square
+        let pawn_attacks = Self::pawn_attacks_to(square, color);
+        let knight_attacks = self.lookup.non_sliding_moves(square, Piece::Knight);
+        let bishop_attacks = self.lookup.sliding_moves(square, occupancy, Piece::Bishop);
+        let rook_attacks = self.lookup.sliding_moves(square, occupancy, Piece::Rook);
+        let king_attacks = self.lookup.non_sliding_moves(square, Piece::King);
+        let queen_attacks = bishop_attacks | rook_attacks;
+
+        // Get relevant pieces that can attack the square
+        let pawns = pawn_attacks & board.bb_piece(Piece::Pawn);
+        let knights = knight_attacks & board.bb_piece(Piece::Knight);
+        let bishops = bishop_attacks & board.bb_piece(Piece::Bishop);
+        let rooks = rook_attacks & board.bb_piece(Piece::Rook);
+        let king = king_attacks & board.bb_piece(Piece::King);
+        let queens = queen_attacks & board.bb_piece(Piece::Queen);
+
+        // Get only the pieces for the opponent
+        (pawns | knights | bishops | rooks | king | queens) & board.bb_color(!color)
+    }
+
+    fn king_square(board: &Board) -> Square {
+        let color = board.active_color();
+        board.bb(color, Piece::King).trailing_zeros() as Square
+    }
+
+    fn pawn_attacks_to(square: Square, color: Color) -> Bitboard {
+        let bb = Bitboard::square_to_bitboard(square);
+        match color {
+            Color::White => bb.shift(NORTH + WEST) | bb.shift(NORTH + EAST),
+            Color::Black => bb.shift(SOUTH + WEST) | bb.shift(SOUTH + EAST),
         }
     }
 }
