@@ -1,4 +1,4 @@
-use crate::{pieces::Piece, square::{square_to_algebraic, self}};
+use crate::{pieces::Piece, square::{square_to_algebraic}};
 
 pub const NORTH: i8 = 8;
 pub const EAST: i8 = 1;

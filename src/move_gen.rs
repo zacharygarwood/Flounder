@@ -106,13 +106,12 @@ impl MoveGenerator {
         let right_pawn_attacks = pawns.shift(direction.north + EAST) & enemy_pieces;
         
         // Store moves
-        self.extract_pawn_promotions(single_pushes, direction.north, MoveType::Promotion, moves);
-        self.extract_pawn_promotions(left_pawn_attacks, direction.north + WEST, MoveType::Promotion, moves);
-        self.extract_pawn_promotions(right_pawn_attacks, direction.north + EAST, MoveType::Promotion, moves);
+        self.extract_promotions(single_pushes, direction.north, MoveType::Promotion, moves);
+        self.extract_promotions(left_pawn_attacks, direction.north + WEST, MoveType::Promotion, moves);
+        self.extract_promotions(right_pawn_attacks, direction.north + EAST, MoveType::Promotion, moves);
     }
     
-    // Pawns use an offset to find where they came from. piece_type is used for promotions for pawns.
-    fn extract_pawn_moves(&self, mut bitboard: Bitboard, offset: i8, move_type: MoveType, moves: &mut Vec<Move>) {
+    fn extract_pawn_moves(&self, bitboard: Bitboard, offset: i8, move_type: MoveType, moves: &mut Vec<Move>) {
         let iter = BitboardIterator::new(bitboard);
         for square in iter {
             let mv = Move::new(square, (square as i8 - offset) as u8, Piece::Pawn, move_type);
@@ -120,7 +119,7 @@ impl MoveGenerator {
         }
     }
 
-    fn extract_pawn_promotions(&self, mut bitboard: Bitboard, offset: i8, move_type: MoveType, moves: &mut Vec<Move>) {
+    fn extract_promotions(&self, bitboard: Bitboard, offset: i8, move_type: MoveType, moves: &mut Vec<Move>) {
         let bb_iter = BitboardIterator::new(bitboard);
         let promotion_pieces = PromotionPieceIterator::new();
         for square in bb_iter {
@@ -155,15 +154,13 @@ impl MoveGenerator {
         }
     }
 
-    // The parameter side represents the side to castle on
-    fn extract_castles(&self, color: Color, side: Piece, move_type: MoveType, moves: &mut Vec<Move>) {
+    fn extract_castles(&self, color: Color, side_to_castle: Piece, move_type: MoveType, moves: &mut Vec<Move>) {
         let (starting_square, king_side_square, queen_side_square) = match color {
             Color::White => (E1, G1, C1),
             Color::Black => (E8, G8, C8),
         };
 
-        // King side or Queen side
-        match side {
+        match side_to_castle {
             Piece::King => {
                 let mv = Move::new(king_side_square, starting_square as u8, Piece::King, move_type);
                 moves.push(mv);
