@@ -7,14 +7,14 @@ pub const WEST: i8 = -EAST;
 
 #[derive(Debug)]
 pub struct Move {
-    to: u8,
-    from: u8,
-    piece_type: Piece,
-    move_type: MoveType,
+    pub to: u8,
+    pub from: u8,
+    pub piece_type: Piece,
+    pub move_type: MoveType,
 }
 
 impl Move {
-    pub fn new(to: u8, from: u8, piece_type: Piece, move_type: MoveType) -> Self {
+    pub fn new(from: u8, to: u8, piece_type: Piece, move_type: MoveType) -> Self {
         Self {
             to,
             from,
@@ -28,7 +28,7 @@ impl Move {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum MoveType {
     Quiet,    // Non-capturing move
     Capture,  // Capturing move 

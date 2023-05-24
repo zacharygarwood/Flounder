@@ -8,14 +8,21 @@ pub struct Table {
     pub knight_lookup: [Bitboard; 64],
     pub king_lookup: [Bitboard; 64],
     pub magic_table: Magic,
+    pub between_lookup: [[Bitboard; 64]; 64],
 }
 
 impl Table {
     pub fn init() -> Self {
+        let knight_lookup = generate_knight_lookup_table();
+        let king_lookup = generate_king_lookup_table();
+        let magic_table = Magic::new();
+        let between_lookup = generate_between_rays_table(&magic_table);
+
         Self {
-            knight_lookup: generate_knight_lookup_table(),
-            king_lookup: generate_king_lookup_table(),
-            magic_table: Magic::new(),
+            knight_lookup,
+            king_lookup,
+            magic_table,
+            between_lookup,
         }
     }
 
@@ -35,6 +42,10 @@ impl Table {
                             self.magic_table.get_rook_attacks(square, occupancy),
             _ => 0 
         }
+    }
+
+    pub fn between(&self, from: Square, to: Square) -> Bitboard {
+        self.between_lookup[from as usize][to as usize]
     }
 }
 
@@ -72,6 +83,33 @@ pub fn generate_king_lookup_table() -> [Bitboard; 64] {
             board.shift(NORTH + WEST) |
             board.shift(SOUTH + EAST) |
             board.shift(SOUTH + WEST);
+    }
+
+    table
+}
+
+pub fn generate_between_rays_table(magic_table: &Magic) -> [[Bitboard; 64]; 64] {
+    let mut table = [[Bitboard::empty(); 64]; 64];
+
+    for to in 0..SQUARES {
+        for from in 0..SQUARES {
+            let from_bb = Bitboard::square_to_bitboard(from);
+            let to_bb = Bitboard::square_to_bitboard(to);
+
+            let from_bishop_attacks = magic_table.get_bishop_attacks(from, to_bb);
+            let from_rook_attacks = magic_table.get_rook_attacks(from, to_bb);
+            
+            let to_bishop_attacks = magic_table.get_bishop_attacks(to, from_bb);
+            let to_rook_attacks = magic_table.get_rook_attacks(to, from_bb);
+
+            if from_bishop_attacks & to_bb != 0 {
+                table[from as usize][to as usize] = (from_bishop_attacks & to_bishop_attacks) | from_bb | to_bb;
+            }
+
+            if from_rook_attacks & to_bb != 0 {
+                table[from as usize][to as usize] = (from_rook_attacks & to_rook_attacks) | from_bb | to_bb;
+            }
+        }
     }
 
     table

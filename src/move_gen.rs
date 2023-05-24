@@ -4,6 +4,7 @@ use crate::table::Table;
 use crate::pieces::{Piece, Color, PromotionPieceIterator};
 use crate::moves::{Move, MoveType, NORTH, EAST, SOUTH, WEST};
 use crate::square::{Square, C1, C8, E1, E8, G1, G8};
+use crate::util::print_bitboard;
 
 pub struct MoveGenerator {
     pub lookup: Table
@@ -27,6 +28,10 @@ impl MoveGenerator {
         self.generate_pseudo_legal_moves(board, Piece::Bishop, &mut moves);
         self.generate_pseudo_legal_moves(board, Piece::Rook, &mut moves);
         self.generate_pseudo_legal_moves(board, Piece::Queen, &mut moves);
+
+        let king_square = Self::king_square(board);
+        let blockers = self.get_blockers(board, king_square);
+        let checkers = self.attacks_to(board, king_square);
     
         moves
     }
@@ -114,7 +119,7 @@ impl MoveGenerator {
     fn extract_pawn_moves(&self, bitboard: Bitboard, offset: i8, move_type: MoveType, moves: &mut Vec<Move>) {
         let iter = BitboardIterator::new(bitboard);
         for square in iter {
-            let mv = Move::new(square, (square as i8 - offset) as u8, Piece::Pawn, move_type);
+            let mv = Move::new((square as i8 - offset) as u8, square, Piece::Pawn, move_type);
             moves.push(mv);
         }
     }
@@ -124,7 +129,7 @@ impl MoveGenerator {
         let promotion_pieces = PromotionPieceIterator::new();
         for square in bb_iter {
             for piece in promotion_pieces.clone() {
-                let mv = Move::new(square, (square as i8 - offset) as u8, piece, move_type);
+                let mv = Move::new((square as i8 - offset) as u8, square, piece, move_type);
                 moves.push(mv);
             }
         }
@@ -162,11 +167,11 @@ impl MoveGenerator {
 
         match side_to_castle {
             Piece::King => {
-                let mv = Move::new(king_side_square, starting_square as u8, Piece::King, move_type);
+                let mv = Move::new(starting_square, king_side_square as u8, Piece::King, move_type);
                 moves.push(mv);
             },
             Piece::Queen => {
-                let mv = Move::new(queen_side_square, starting_square as u8, Piece::King, move_type);
+                let mv = Move::new(starting_square, queen_side_square as u8, Piece::King, move_type);
                 moves.push(mv);
             },
             _ => {} // Only care about King and Queen for king side and queen side castling respectively
@@ -197,18 +202,23 @@ impl MoveGenerator {
     fn extract_moves(&self, bitboard: Bitboard, from: u8, piece_type:Piece, move_type: MoveType, moves: &mut Vec<Move>) {
         let iter = BitboardIterator::new(bitboard);
         for square in iter {
-            let mv = Move::new(square, from, piece_type, move_type);
+            let mv = Move::new(from, square, piece_type, move_type);
             moves.push(mv);
         }
     }
 
     // Returns a bitboard with all pieces attacking a certain square
-    pub fn attacks_to(&self, square: Square, board: Board) -> Bitboard {
+    pub fn attacks_to(&self, board: &Board, square: Square) -> Bitboard {
         let color = board.active_color();
+        let square_bb = Bitboard::square_to_bitboard(square);
         let occupancy = board.bb_all() & !board.bb(color, Piece::King);
 
         // Get all attacks from square
-        let pawn_attacks = Self::pawn_attacks_to(square, color);
+        let pawn_attacks = match color {
+            Color::White => square_bb.shift(NORTH + WEST) | square_bb.shift(NORTH + EAST),
+            Color::Black => square_bb.shift(SOUTH + WEST) | square_bb.shift(SOUTH + EAST),
+        };
+
         let knight_attacks = self.lookup.non_sliding_moves(square, Piece::Knight);
         let bishop_attacks = self.lookup.sliding_moves(square, occupancy, Piece::Bishop);
         let rook_attacks = self.lookup.sliding_moves(square, occupancy, Piece::Rook);
@@ -227,18 +237,60 @@ impl MoveGenerator {
         (pawns | knights | bishops | rooks | king | queens) & board.bb_color(!color)
     }
 
+    fn get_blockers(&self, board: &Board, king_square: Square) {
+        let color = board.active_color();
+        let occupancy = board.bb_all();
+        let king_bb = board.bb(color, Piece::King);
+
+        let enemy_bishops = board.bb(!color, Piece::Bishop) | board.bb(!color, Piece::Queen);
+        let enemy_rooks = board.bb(!color, Piece::Rook) | board.bb(!color, Piece::Queen);
+
+        let bishop_attackers = self.lookup.sliding_moves(king_square, enemy_bishops, Piece::Bishop) & enemy_bishops;
+        let rook_attackers = self.lookup.sliding_moves(king_square, enemy_rooks, Piece::Rook) & enemy_rooks;
+
+        let pinners = bishop_attackers | rook_attackers;
+
+        let iter = BitboardIterator::new(pinners);
+        for square in iter {
+            // We don't want the pinner or king to be considered a blocker
+            let ignore = Bitboard::square_to_bitboard(square) | king_bb;
+            
+            
+        }
+
+    }
+
     fn king_square(board: &Board) -> Square {
         let color = board.active_color();
         board.bb(color, Piece::King).trailing_zeros() as Square
     }
 
-    fn pawn_attacks_to(square: Square, color: Color) -> Bitboard {
-        let bb = Bitboard::square_to_bitboard(square);
-        match color {
-            Color::White => bb.shift(NORTH + WEST) | bb.shift(NORTH + EAST),
-            Color::Black => bb.shift(SOUTH + WEST) | bb.shift(SOUTH + EAST),
+    fn is_legal(&self, board: &Board, mv: &Move, checkers: Bitboard, blockers: Bitboard, king_square: Square) -> bool {
+        let is_castle = mv.move_type == MoveType::Castle;
+        let is_king = mv.piece_type == Piece::King;
+        
+        if is_king && !is_castle {
+            self.is_legal_king_move(board, mv)
+        } else {
+            self.is_legal_non_king_move(board, mv, checkers, blockers, king_square)
         }
     }
+
+    fn is_legal_king_move(&self, board: &Board, mv: &Move) -> bool {
+        self.attacks_to(board, mv.to) != 0
+    }
+
+    fn is_legal_non_king_move(&self, board: &Board, mv: &Move, checkers: Bitboard, blockers: Bitboard, king_square: Square) -> bool {
+        let num_checks = checkers.count_ones();
+
+        // When there are two or more checks the only legal moves are king moves
+        if num_checks > 1 {
+            return false;
+        }
+
+        return true
+    }
+
 }
 
 #[derive(Copy, Clone)]
