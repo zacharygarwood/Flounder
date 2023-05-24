@@ -8,7 +8,8 @@ pub struct Table {
     pub knight_lookup: [Bitboard; 64],
     pub king_lookup: [Bitboard; 64],
     pub magic_table: Magic,
-    pub between_lookup: [[Bitboard; 64]; 64],
+    pub inclusive_between_lookup: [[Bitboard; 64]; 64],
+    pub exclusive_between_lookup: [[Bitboard; 64]; 64],
 }
 
 impl Table {
@@ -16,13 +17,15 @@ impl Table {
         let knight_lookup = generate_knight_lookup_table();
         let king_lookup = generate_king_lookup_table();
         let magic_table = Magic::new();
-        let between_lookup = generate_between_rays_table(&magic_table);
+        let inclusive_between_lookup = generate_inclusive_between_rays_table(&magic_table);
+        let exclusive_between_lookup = generate_exclusive_between_rays_table(&magic_table);
 
         Self {
             knight_lookup,
             king_lookup,
             magic_table,
-            between_lookup,
+            inclusive_between_lookup,
+            exclusive_between_lookup,
         }
     }
 
@@ -44,8 +47,11 @@ impl Table {
         }
     }
 
-    pub fn between(&self, from: Square, to: Square) -> Bitboard {
-        self.between_lookup[from as usize][to as usize]
+    pub fn between(&self, from: Square, to: Square, inclusive: bool) -> Bitboard {
+        match inclusive {
+            true => self.inclusive_between_lookup[from as usize][to as usize],
+            false => self.exclusive_between_lookup[from as usize][to as usize],
+        }
     }
 }
 
@@ -88,7 +94,9 @@ pub fn generate_king_lookup_table() -> [Bitboard; 64] {
     table
 }
 
-pub fn generate_between_rays_table(magic_table: &Magic) -> [[Bitboard; 64]; 64] {
+// Ray is only between the squares to and from and doesnt't extend past
+// Ex: when (from = a2, to = a4) the ray would equal a2 a3 a4
+pub fn generate_inclusive_between_rays_table(magic_table: &Magic) -> [[Bitboard; 64]; 64] {
     let mut table = [[Bitboard::empty(); 64]; 64];
 
     for to in 0..SQUARES {
@@ -101,6 +109,36 @@ pub fn generate_between_rays_table(magic_table: &Magic) -> [[Bitboard; 64]; 64] 
             
             let to_bishop_attacks = magic_table.get_bishop_attacks(to, from_bb);
             let to_rook_attacks = magic_table.get_rook_attacks(to, from_bb);
+
+            if from_bishop_attacks & to_bb != 0 {
+                table[from as usize][to as usize] = (from_bishop_attacks & to_bishop_attacks) | from_bb | to_bb;
+            }
+
+            if from_rook_attacks & to_bb != 0 {
+                table[from as usize][to as usize] = (from_rook_attacks & to_rook_attacks) | from_bb | to_bb;
+            }
+        }
+    }
+
+    table
+}
+
+// Ray is between the squares to and from and extends past to the edges of the board
+// Ex: when (from = a2, to = a4) the ray would equal a1 a2 a3 a4 a5 a6 a7 a8
+pub fn generate_exclusive_between_rays_table(magic_table: &Magic) -> [[Bitboard; 64]; 64] {
+    let mut table = [[Bitboard::empty(); 64]; 64];
+    let empty = Bitboard::empty();
+
+    for to in 0..SQUARES {
+        for from in 0..SQUARES {
+            let from_bb = Bitboard::square_to_bitboard(from);
+            let to_bb = Bitboard::square_to_bitboard(to);
+
+            let from_bishop_attacks = magic_table.get_bishop_attacks(from, empty);
+            let from_rook_attacks = magic_table.get_rook_attacks(from, empty);
+            
+            let to_bishop_attacks = magic_table.get_bishop_attacks(to, empty);
+            let to_rook_attacks = magic_table.get_rook_attacks(to, empty);
 
             if from_bishop_attacks & to_bb != 0 {
                 table[from as usize][to as usize] = (from_bishop_attacks & to_bishop_attacks) | from_bb | to_bb;

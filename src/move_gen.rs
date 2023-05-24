@@ -30,8 +30,10 @@ impl MoveGenerator {
         self.generate_pseudo_legal_moves(board, Piece::Queen, &mut moves);
 
         let king_square = Self::king_square(board);
-        let blockers = self.get_blockers(board, king_square);
+        let pinned_pieces = self.get_pinned_pieces(board, king_square);
         let checkers = self.attacks_to(board, king_square);
+
+        moves.retain(|mv| self.is_legal(board, mv, checkers, pinned_pieces, king_square));
     
         moves
     }
@@ -222,41 +224,47 @@ impl MoveGenerator {
         let knight_attacks = self.lookup.non_sliding_moves(square, Piece::Knight);
         let bishop_attacks = self.lookup.sliding_moves(square, occupancy, Piece::Bishop);
         let rook_attacks = self.lookup.sliding_moves(square, occupancy, Piece::Rook);
+        let queen_attacks = self.lookup.sliding_moves(square, occupancy, Piece::Queen);
         let king_attacks = self.lookup.non_sliding_moves(square, Piece::King);
-        let queen_attacks = bishop_attacks | rook_attacks;
 
         // Get relevant pieces that can attack the square
-        let pawns = pawn_attacks & board.bb_piece(Piece::Pawn);
-        let knights = knight_attacks & board.bb_piece(Piece::Knight);
-        let bishops = bishop_attacks & board.bb_piece(Piece::Bishop);
-        let rooks = rook_attacks & board.bb_piece(Piece::Rook);
-        let king = king_attacks & board.bb_piece(Piece::King);
-        let queens = queen_attacks & board.bb_piece(Piece::Queen);
+        let pawns = pawn_attacks & board.bb(!color, Piece::Pawn);
+        let knights = knight_attacks & board.bb(!color, Piece::Knight);
+        let bishops = bishop_attacks & board.bb(!color, Piece::Bishop);
+        let rooks = rook_attacks & board.bb(!color, Piece::Rook);
+        let king = king_attacks & board.bb(!color, Piece::King);
+        let queens = queen_attacks & board.bb(!color, Piece::Queen);
 
-        // Get only the pieces for the opponent
-        (pawns | knights | bishops | rooks | king | queens) & board.bb_color(!color)
+        pawns | knights | bishops | rooks | king | queens
     }
 
-    fn get_blockers(&self, board: &Board, king_square: Square) {
+    fn get_pinned_pieces(&self, board: &Board, king_square: Square) -> Bitboard {
         let color = board.active_color();
         let occupancy = board.bb_all();
         let king_bb = board.bb(color, Piece::King);
 
-        let enemy_bishops = board.bb(!color, Piece::Bishop) | board.bb(!color, Piece::Queen);
-        let enemy_rooks = board.bb(!color, Piece::Rook) | board.bb(!color, Piece::Queen);
+        let enemy_bishops = board.bb(!color, Piece::Bishop);
+        let enemy_rooks = board.bb(!color, Piece::Rook);
+        let enemy_queens = board.bb(!color, Piece::Queen);
 
         let bishop_attackers = self.lookup.sliding_moves(king_square, enemy_bishops, Piece::Bishop) & enemy_bishops;
         let rook_attackers = self.lookup.sliding_moves(king_square, enemy_rooks, Piece::Rook) & enemy_rooks;
+        let queen_attackers = self.lookup.sliding_moves(king_square, enemy_queens, Piece::Queen) & enemy_queens;
 
-        let pinners = bishop_attackers | rook_attackers;
+        let pinners = bishop_attackers | rook_attackers | queen_attackers;
+        let mut pinned_pieces = Bitboard::empty();
 
         let iter = BitboardIterator::new(pinners);
-        for square in iter {
-            // We don't want the pinner or king to be considered a blocker
-            let ignore = Bitboard::square_to_bitboard(square) | king_bb;
-            
-            
+        for pinner in iter {
+            // We don't want the pinner or king to be considered a pinned piece
+            let ignore = Bitboard::square_to_bitboard(pinner) | king_bb;
+            let potential_pinned_pieces = self.lookup.between(pinner, king_square, true) & occupancy & !ignore;
+
+            if potential_pinned_pieces.count_ones() == 1 {
+                pinned_pieces |= potential_pinned_pieces;
+            }
         }
+        pinned_pieces
 
     }
 
@@ -265,14 +273,14 @@ impl MoveGenerator {
         board.bb(color, Piece::King).trailing_zeros() as Square
     }
 
-    fn is_legal(&self, board: &Board, mv: &Move, checkers: Bitboard, blockers: Bitboard, king_square: Square) -> bool {
+    fn is_legal(&self, board: &Board, mv: &Move, checkers: Bitboard, pinned_pieces: Bitboard, king_square: Square) -> bool {
         let is_castle = mv.move_type == MoveType::Castle;
         let is_king = mv.piece_type == Piece::King;
         
         if is_king && !is_castle {
             self.is_legal_king_move(board, mv)
         } else {
-            self.is_legal_non_king_move(board, mv, checkers, blockers, king_square)
+            self.is_legal_non_king_move(board, mv, checkers, pinned_pieces, king_square)
         }
     }
 
@@ -280,7 +288,7 @@ impl MoveGenerator {
         self.attacks_to(board, mv.to) != 0
     }
 
-    fn is_legal_non_king_move(&self, board: &Board, mv: &Move, checkers: Bitboard, blockers: Bitboard, king_square: Square) -> bool {
+    fn is_legal_non_king_move(&self, board: &Board, mv: &Move, checkers: Bitboard, pinned_pieces: Bitboard, king_square: Square) -> bool {
         let num_checks = checkers.count_ones();
 
         // When there are two or more checks the only legal moves are king moves
@@ -288,7 +296,60 @@ impl MoveGenerator {
             return false;
         }
 
-        return true
+        // if mv.move_type == MoveType::EnPassant {
+        //     self.is_legal_en_passant();
+        // }
+
+        // if mv.move_type == MoveType::Castle {
+        //     self.is_legal_castle();
+        // }
+
+        let pinned = self.is_pinned(mv, pinned_pieces);
+
+        // If there is one check then the move can either capture the attacking piece or block the check
+        if num_checks == 1 {
+            let attacker = checkers.trailing_zeros() as u8;
+            let to_bb = Bitboard::square_to_bitboard(mv.to);
+
+            // Capture attacking piece
+            if mv.to == attacker {
+                return !pinned;
+            } else { // Move piece to block check
+                let attacking_ray = self.lookup.between(attacker, king_square, true);
+                let is_piece_on_ray = attacking_ray & to_bb != 0;
+
+                return !pinned && is_piece_on_ray;
+            }
+        }
+
+        // If not pinned the piece is free to move since the king is not in check
+        if pinned {
+            return self.is_legal_pinned_move(mv, king_square);
+        } else {
+            return true;
+        }
+    }
+
+    fn is_pinned(&self, mv: &Move, pinned_pieces: Bitboard) -> bool {
+        let from_bb = Bitboard::square_to_bitboard(mv.from);
+        
+        (pinned_pieces & from_bb) != 0
+    }
+
+    fn is_legal_pinned_move(&self, mv: &Move, king_square: Square) -> bool {
+        let king_bb = Bitboard::square_to_bitboard(king_square);
+        let ray = self.lookup.between(mv.to, mv.from, false);
+        let is_king_on_ray = (ray & king_bb) != 0;
+        
+        is_king_on_ray
+    }
+
+    fn is_legal_en_passant(&self) {
+
+    }
+
+    fn is_legal_castle(&self) {
+
     }
 
 }

@@ -153,6 +153,11 @@ impl Position {
         self.colors[color].set_bit(rank, file);
         self.pieces[piece].set_bit(rank, file);
     }
+
+    pub fn remove_piece(&mut self, color: Color, piece: Piece, rank: u8, file: u8) {
+        self.colors[color].remove_bit(rank, file);
+        self.pieces[piece].remove_bit(rank, file);
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
