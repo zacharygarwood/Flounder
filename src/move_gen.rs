@@ -3,7 +3,7 @@ use crate::bitboard::{Bitboard, BitboardIterator, BitboardOperations, RANK_2, RA
 use crate::table::Table;
 use crate::pieces::{Piece, Color, PromotionPieceIterator};
 use crate::moves::{Move, MoveType, NORTH, EAST, SOUTH, WEST};
-use crate::square::{Square, C1, C8, E1, E8, G1, G8};
+use crate::square::{Square, C1, C8, E1, E8, G1, G8, square_to_rank_file};
 use crate::util::print_bitboard;
 
 pub struct MoveGenerator {
@@ -29,7 +29,7 @@ impl MoveGenerator {
         self.generate_pseudo_legal_moves(board, Piece::Rook, &mut moves);
         self.generate_pseudo_legal_moves(board, Piece::Queen, &mut moves);
 
-        let king_square = Self::king_square(board);
+        let king_square = self.king_square(board);
         let pinned_pieces = self.get_pinned_pieces(board, king_square);
         let checkers = self.attacks_to(board, king_square);
 
@@ -268,7 +268,7 @@ impl MoveGenerator {
 
     }
 
-    fn king_square(board: &Board) -> Square {
+    fn king_square(&self, board: &Board) -> Square {
         let color = board.active_color();
         board.bb(color, Piece::King).trailing_zeros() as Square
     }
@@ -296,13 +296,14 @@ impl MoveGenerator {
             return false;
         }
 
-        // if mv.move_type == MoveType::EnPassant {
-        //     self.is_legal_en_passant();
-        // }
+        // Special moves that have their own validation
+        if mv.move_type == MoveType::EnPassant {
+            return self.is_legal_en_passant(board, mv, king_square);
+        }
 
-        // if mv.move_type == MoveType::Castle {
-        //     self.is_legal_castle();
-        // }
+        if mv.move_type == MoveType::Castle {
+            return self.is_legal_castle(board, mv, num_checks);
+        }
 
         let pinned = self.is_pinned(mv, pinned_pieces);
 
@@ -344,12 +345,56 @@ impl MoveGenerator {
         is_king_on_ray
     }
 
-    fn is_legal_en_passant(&self) {
+    fn is_legal_en_passant(&self, board: &Board, mv: &Move, king_square: Square) -> bool {
+        let mut board = *board;
+        let color = board.active_color();
+        
+        let en_passant_square = match color {
+            Color::White => mv.to - 8,
+            Color::Black => mv.to + 8,
+        };
 
+        let temp_move = Move::new(mv.from, mv.to, Piece::Pawn, MoveType::Capture);
+        let (rank, file) = square_to_rank_file(en_passant_square);
+
+        // Remove pawn being captured to perform needed legality checks
+        board.remove_piece(!color, Piece::Pawn, rank, file);
+
+        let pinned_pieces = self.get_pinned_pieces(&board, king_square);
+        let checkers = self.attacks_to(&board, king_square);
+        let is_legal = self.is_legal_non_king_move(&board, &temp_move, checkers, pinned_pieces, king_square);
+
+        // Add pawn that was captured back
+        board.add_piece(!color, Piece::Pawn, rank, file);
+
+        is_legal
     }
 
-    fn is_legal_castle(&self) {
+    fn is_legal_castle(&self, board: &Board, mv: &Move, num_checks: u32) -> bool {
+        if num_checks != 0 {
+            return false;
+        }
 
+        let color = board.active_color();
+        let (king_side_square, king_side_checks, queen_side_checks) = match color {
+            Color::White => (G1, vec![5, 6], vec![2,3]),
+            Color::Black => (G8, vec![61, 62], vec![58, 59]),
+        };
+
+        let is_king_side = mv.to == king_side_square;
+
+        let squares_to_check = match is_king_side {
+            true => king_side_checks,
+            false => queen_side_checks,
+        };
+        
+        for square in squares_to_check {
+            if self.attacks_to(board, square) != 0 {
+                return false;
+            }
+        }
+
+        true
     }
 
 }

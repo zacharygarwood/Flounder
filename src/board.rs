@@ -5,6 +5,7 @@ use crate::util::print_bitboard;
 use crate::fen::fen_to_board;
 
 // Represents the chess board using bitboards
+#[derive(Copy, Clone, Debug)]
 pub struct Board {
     pub position: Position,
     pub active_color: Color,
@@ -75,6 +76,14 @@ impl Board {
         self.bb_color(Color::White) | self.bb_color(Color::Black)
     }
 
+    pub fn add_piece(&mut self, color: Color, piece: Piece, rank: u8, file: u8) {
+        self.position.add_piece(color, piece, rank, file);
+    }
+
+    pub fn remove_piece(&mut self, color: Color, piece: Piece, rank: u8, file: u8) {
+        self.position.remove_piece(color, piece, rank, file);
+    }
+
     pub fn print(&self) {
         // TODO: Eventually use a 2D array of pieces to display the board instead of bitboards
         println!("White pieces:\n");
@@ -103,6 +112,7 @@ impl Board {
 }
 
 
+#[derive(Copy, Clone, Debug)]
 pub struct Position {
     pieces: [Bitboard; PIECE_COUNT], // Six bitboards for the pieces
     colors: [Bitboard; COLOR_COUNT], // Two bitboards for the colors
