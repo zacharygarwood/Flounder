@@ -1,6 +1,6 @@
 use crate::board::{Board, Position, Castle};
 use crate::pieces::{Piece, Color};
-use crate::square::{Square, algebraic_to_square};
+use crate::square::{Square, algebraic_to_square, rank_file_to_square};
 use core::result::Result;
 
 pub fn fen_to_board(fen: &str) -> Result<Board, String> {
@@ -43,10 +43,11 @@ fn parse_piece_placement(piece_placement: &str) -> Result<Position, String> {
         let rank = 7 - idx as u8;
         let mut file = 0;
         for c in values.chars() {
+            let square = rank_file_to_square(rank, file);
             match c {
                 'p' | 'n' | 'b' | 'r' | 'q' | 'k' | 
                 'P' | 'N' | 'B' | 'R' | 'Q' | 'K' => {
-                    position.add_piece(char_to_color(c), char_to_piece(c), rank, file);
+                    position.add_piece(char_to_color(c), char_to_piece(c), square);
                     file += 1;
                 } 
                 '1'..='8' => file += c.to_digit(10).unwrap() as u8,

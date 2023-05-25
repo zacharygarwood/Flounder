@@ -1,8 +1,9 @@
 use crate::pieces::{Piece, Color, PIECE_COUNT, COLOR_COUNT};
-use crate::square::Square;
+use crate::square::{Square, A1, D1, F1, G1, H1, A8, D8, F8, G8, H8};
 use crate::bitboard::{Bitboard, BitboardOperations, WHITE_QUEEN_SIDE, WHITE_KING_SIDE, BLACK_QUEEN_SIDE, BLACK_KING_SIDE};
 use crate::util::print_bitboard;
 use crate::fen::fen_to_board;
+use crate::moves::{Move, MoveType};
 
 // Represents the chess board using bitboards
 #[derive(Copy, Clone, Debug)]
@@ -76,12 +77,77 @@ impl Board {
         self.bb_color(Color::White) | self.bb_color(Color::Black)
     }
 
-    pub fn add_piece(&mut self, color: Color, piece: Piece, rank: u8, file: u8) {
-        self.position.add_piece(color, piece, rank, file);
+    pub fn add_piece(&mut self, color: Color, piece: Piece, square: Square) {
+        self.position.add_piece(color, piece, square);
     }
 
-    pub fn remove_piece(&mut self, color: Color, piece: Piece, rank: u8, file: u8) {
-        self.position.remove_piece(color, piece, rank, file);
+    pub fn remove_piece(&mut self, color: Color, piece: Piece, square: Square) {
+        self.position.remove_piece(color, piece, square);
+    }
+
+    pub fn make_move(&mut self, mv: &Move) {
+        self.reset_en_passant_target();
+
+        if mv.move_type == MoveType::EnPassant {
+            self.make_en_passant(mv);
+        }
+
+        if mv.move_type == MoveType::Castle {
+            self.make_castle(mv);
+        }
+    }
+
+    fn reset_en_passant_target(&mut self) {
+        self.en_passant_target = None;
+    }
+
+    fn make_en_passant(&mut self, mv: &Move) {
+        let color = self.active_color;
+        let offset = match color {
+            Color::White => 8,
+            Color::Black => -8,
+        };
+
+        let captured_square = (mv.to as i8 - offset) as u8;
+
+        self.remove_piece(!color, Piece::Pawn, captured_square);
+        self.remove_piece(color, Piece::Pawn, mv.from);
+        self.add_piece(color, Piece::Pawn, mv.to)
+
+        // TODO: Might need to modify halfmove clock and fullmove counter
+    }
+
+    fn make_castle(&mut self, mv: &Move) {
+        let color = self.active_color;
+
+        let is_king_side = match color {
+            Color::White => G1 == mv.to,
+            Color::Black => G8 == mv.to,
+        };
+
+        let (rook_from, rook_to) = match is_king_side {
+            true => match color {
+                Color::White => (H8, F1),
+                Color::Black => (H8, F8),
+            },
+            false => match color {
+                Color::White => (A1, D1),
+                Color::Black => (A8, D8),
+            }
+        };
+
+        self.remove_piece(color, Piece::King, mv.from);
+        self.add_piece(color, Piece::King, mv.to);
+
+        self.remove_piece(color, Piece::Rook, rook_from);
+        self.add_piece(color, Piece::Rook, rook_to);
+
+        self.remove_castle_rights(color);
+
+    }
+
+    fn remove_castle_rights(&mut self, color: Color) {
+        self.castling_ability.remove_rights(color);
     }
 
     pub fn print(&self) {
@@ -159,14 +225,14 @@ impl Position {
         self.pieces[piece]
     }
 
-    pub fn add_piece(&mut self, color: Color, piece: Piece, rank: u8, file: u8) {
-        self.colors[color].set_bit(rank, file);
-        self.pieces[piece].set_bit(rank, file);
+    pub fn add_piece(&mut self, color: Color, piece: Piece, square: Square) {
+        self.colors[color].set_bit(square);
+        self.pieces[piece].set_bit(square);
     }
 
-    pub fn remove_piece(&mut self, color: Color, piece: Piece, rank: u8, file: u8) {
-        self.colors[color].remove_bit(rank, file);
-        self.pieces[piece].remove_bit(rank, file);
+    pub fn remove_piece(&mut self, color: Color, piece: Piece, square: Square) {
+        self.colors[color].remove_bit(square);
+        self.pieces[piece].remove_bit(square);
     }
 }
 
@@ -195,6 +261,19 @@ impl Castle {
             'k' => self.black_king = ability,
             'q' => self.black_queen = ability,
             _ => {} // Can ignore any other character
+        };
+    }
+
+    pub fn remove_rights(&mut self, color: Color) {
+        match color {
+            Color::White => {
+                self.white_king = false;
+                self.white_queen = false;
+            }
+            Color::Black => {
+                self.black_king = false;
+                self.black_queen = false;
+            }
         };
     }
 }

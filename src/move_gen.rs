@@ -355,17 +355,16 @@ impl MoveGenerator {
         };
 
         let temp_move = Move::new(mv.from, mv.to, Piece::Pawn, MoveType::Capture);
-        let (rank, file) = square_to_rank_file(en_passant_square);
 
         // Remove pawn being captured to perform needed legality checks
-        board.remove_piece(!color, Piece::Pawn, rank, file);
+        board.remove_piece(!color, Piece::Pawn, en_passant_square);
 
         let pinned_pieces = self.get_pinned_pieces(&board, king_square);
         let checkers = self.attacks_to(&board, king_square);
         let is_legal = self.is_legal_non_king_move(&board, &temp_move, checkers, pinned_pieces, king_square);
 
         // Add pawn that was captured back
-        board.add_piece(!color, Piece::Pawn, rank, file);
+        board.add_piece(!color, Piece::Pawn, en_passant_square);
 
         is_legal
     }

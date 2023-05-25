@@ -32,8 +32,8 @@ pub const BLACK_QUEEN_SIDE: Bitboard = 0x0E00000000000000;
 
 pub trait BitboardOperations {
     fn shift(&self, n: i8) -> Bitboard;
-    fn set_bit(&mut self, rank: u8, file: u8);
-    fn remove_bit(&mut self, rank: u8, file: u8);
+    fn set_bit(&mut self, square: Square);
+    fn remove_bit(&mut self, square: Square);
     fn empty() -> Bitboard;
     fn rank_file_to_bitboard(rank: u8, file: u8) -> Bitboard;
     fn square_to_bitboard(square: Square) -> Bitboard;
@@ -83,14 +83,12 @@ impl BitboardOperations for Bitboard {
     }
 
     // Set a bit on an existing Bitboard
-    fn set_bit(&mut self, rank: u8, file: u8) {
-        let square = rank_file_to_square(rank, file);
+    fn set_bit(&mut self, square: Square) {
         *self |= 1 << square;
     }
 
     // Set a bit on an existing Bitboard
-    fn remove_bit(&mut self, rank: u8, file: u8) {
-        let square = rank_file_to_square(rank, file);
+    fn remove_bit(&mut self, square: Square) {
         *self &= !(1 << square);
     }
 
