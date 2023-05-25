@@ -45,6 +45,38 @@ impl std::fmt::Display for Color {
     }
 }
 
+pub struct PieceIterator {
+    index: usize,
+}
+
+impl PieceIterator {
+    pub fn new() -> Self {
+        PieceIterator { index: 0 }
+    }
+}
+
+impl Iterator for PieceIterator {
+    type Item = Piece;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index < 6 {
+            let piece = match self.index {
+                0 => Piece::Pawn,
+                1 => Piece::Knight,
+                2 => Piece::Bishop,
+                3 => Piece::Rook,
+                4 => Piece::Queen,
+                5 => Piece::King,
+                _ => unreachable!(),
+            };
+            self.index += 1;
+            Some(piece)
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 pub struct PromotionPieceIterator {
     current_piece: Piece,

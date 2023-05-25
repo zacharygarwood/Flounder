@@ -1,4 +1,4 @@
-use crate::pieces::{Piece, Color, PIECE_COUNT, COLOR_COUNT};
+use crate::pieces::{Piece, Color, PIECE_COUNT, COLOR_COUNT, PieceIterator};
 use crate::square::{Square, A1, D1, F1, G1, H1, A8, D8, F8, G8, H8};
 use crate::bitboard::{Bitboard, BitboardOperations, WHITE_QUEEN_SIDE, WHITE_KING_SIDE, BLACK_QUEEN_SIDE, BLACK_KING_SIDE};
 use crate::util::print_bitboard;
@@ -86,19 +86,59 @@ impl Board {
     }
 
     pub fn make_move(&mut self, mv: &Move) {
+        let color = self.active_color;
+
         self.reset_en_passant_target();
+        self.change_castling_rights(mv);
 
-        if mv.move_type == MoveType::EnPassant {
-            self.make_en_passant(mv);
-        }
-
-        if mv.move_type == MoveType::Castle {
-            self.make_castle(mv);
+        match mv.move_type {
+            // MoveType::Quiet => self.make_quiet(),
+            MoveType::Capture => self.make_capture(mv),
+            MoveType::EnPassant => self.make_en_passant(mv),
+            MoveType::Castle => self.make_castle(mv),
+            MoveType::Promotion => self.make_promotion(mv),
+            _ => {}
         }
     }
 
     fn reset_en_passant_target(&mut self) {
         self.en_passant_target = None;
+    }
+
+    fn change_castling_rights(&mut self, mv: &Move) {
+        let color = self.active_color;
+
+        // Any king move (includes castling) removes all rights for that player
+        if mv.piece_type == Piece::King {
+            self.castling_ability.remove_rights(color);
+        }
+
+        // Moving the rook when the rights for its side are set removes them
+        if mv.piece_type == Piece::Rook {
+            // TODO
+        }
+
+        // Capturing a rook when its rights are set removes them
+        if mv.move_type == MoveType::Capture {
+            // TODO 
+        }
+
+        // A promotion could also capture a rook so the rights need to be changed
+        // TODO
+    }
+
+    fn make_quiet(&mut self, mv: &Move) {
+        // Pawn could be pushed twice adding en passant target
+        // TODO
+    }   
+
+    fn make_capture(&mut self, mv: &Move) {
+        let color = self.active_color;
+        let captured_piece = self.get_piece_at(mv.to).unwrap(); // Should never be None as the move legality is performed in move_gen.rs
+
+        self.remove_piece(!color, captured_piece, mv.to);
+        self.remove_piece(color, mv.piece_type, mv.from);
+        self.add_piece(color, mv.piece_type, mv.to);
     }
 
     fn make_en_passant(&mut self, mv: &Move) {
@@ -113,8 +153,6 @@ impl Board {
         self.remove_piece(!color, Piece::Pawn, captured_square);
         self.remove_piece(color, Piece::Pawn, mv.from);
         self.add_piece(color, Piece::Pawn, mv.to)
-
-        // TODO: Might need to modify halfmove clock and fullmove counter
     }
 
     fn make_castle(&mut self, mv: &Move) {
@@ -127,7 +165,7 @@ impl Board {
 
         let (rook_from, rook_to) = match is_king_side {
             true => match color {
-                Color::White => (H8, F1),
+                Color::White => (H1, F1),
                 Color::Black => (H8, F8),
             },
             false => match color {
@@ -142,12 +180,42 @@ impl Board {
         self.remove_piece(color, Piece::Rook, rook_from);
         self.add_piece(color, Piece::Rook, rook_to);
 
-        self.remove_castle_rights(color);
+    }
+
+    fn make_promotion(&mut self, mv: &Move) {
+        let color = self.active_color;
+
+        let north_offset: i8 = match color {
+            Color::White => 8,
+            Color::Black => -8,
+        };
+
+        // If the pawn is not being pushed then it is a capture
+        let is_capture = (mv.from as i8 + north_offset) != mv.to as i8; 
+
+
+        self.remove_piece(color, Piece::Pawn, mv.from);
+
+        if is_capture {
+            // TODO
+        }
 
     }
 
     fn remove_castle_rights(&mut self, color: Color) {
         self.castling_ability.remove_rights(color);
+    }
+
+    fn get_piece_at(&self, square: Square) -> Option<Piece> {
+        let square_bb = Bitboard::square_to_bitboard(square);
+
+        let iter = PieceIterator::new();
+        for piece in iter {
+            if self.bb_piece(piece) & square_bb != 0 {
+                return Some(piece);
+            }
+        }
+        None
     }
 
     pub fn print(&self) {
@@ -186,8 +254,8 @@ pub struct Position {
 
 impl Position {
     pub fn new() -> Self{
-        let mut pieces = [0; PIECE_COUNT];
-        let mut colors = [0; COLOR_COUNT];
+        let pieces = [0; PIECE_COUNT];
+        let colors = [0; COLOR_COUNT];
     
         Self { pieces, colors}
     }
