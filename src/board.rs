@@ -233,20 +233,15 @@ impl Board {
     fn make_promotion(&mut self, mv: &Move) {
         let color = self.active_color;
 
-        let north_offset: i8 = match color {
-            Color::White => 8,
-            Color::Black => -8,
-        };
-
-        // If the pawn is not being pushed then it is a capture
-        let is_capture = (mv.from as i8 + north_offset) != mv.to as i8; 
-
-
-        self.remove_piece(color, Piece::Pawn, mv.from);
+        let captured_piece = self.get_piece_at(mv.to);
+        let is_capture = captured_piece != None; 
 
         if is_capture {
-            // TODO
+            self.remove_piece(!color, captured_piece.unwrap(), mv.to);
         }
+
+        self.remove_piece(color, Piece::Pawn, mv.from);
+        self.add_piece(color, mv.piece_type, mv.to);
 
     }
 
