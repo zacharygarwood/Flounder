@@ -110,21 +110,69 @@ impl Board {
 
         // Any king move (includes castling) removes all rights for that player
         if mv.piece_type == Piece::King {
-            self.castling_ability.remove_rights(color);
+            self.castling_ability.remove_all_rights(color);
         }
 
         // Moving the rook when the rights for its side are set removes them
         if mv.piece_type == Piece::Rook {
-            // TODO
+            let (king_side_rights, queen_side_rights) = self.castling_ability(color);
+            let (rook_on_king_side, rook_on_queen_side) = match color {
+                Color::White => (mv.from == H1, mv.from == A1),
+                Color::Black => (mv.from == H8, mv.from == A8),
+            };
+
+            if rook_on_king_side && king_side_rights {
+                self.castling_ability.remove_side_rights(color, Piece::King);
+            }
+
+            if rook_on_queen_side && queen_side_rights {
+                self.castling_ability.remove_side_rights(color, Piece::Queen);
+            }
         }
 
         // Capturing a rook when its rights are set removes them
         if mv.move_type == MoveType::Capture {
-            // TODO 
+            // A capture must be going to another piece, so this will never be None
+            let captured_piece = self.get_piece_at(mv.to).unwrap();
+
+            if captured_piece == Piece::Rook {
+                let (king_side_rights, queen_side_rights) = self.castling_ability(color);
+                let (rook_on_king_side, rook_on_queen_side) = match color {
+                    Color::White => (mv.to == H1, mv.to == A1),
+                    Color::Black => (mv.to == H8, mv.to == A8),
+                };
+
+                if rook_on_king_side && king_side_rights {
+                    self.castling_ability.remove_side_rights(color, Piece::King);
+                }
+    
+                if rook_on_queen_side && queen_side_rights {
+                    self.castling_ability.remove_side_rights(color, Piece::Queen);
+                }
+            }
         }
 
         // A promotion could also capture a rook so the rights need to be changed
-        // TODO
+        if mv.move_type == MoveType::Promotion {
+            // A promotion could be a push of a pawn and not a capture, so this can be None
+            let captured_piece = self.get_piece_at(mv.to);
+
+            if captured_piece != None && captured_piece.unwrap() == Piece::Rook {
+                let (king_side_rights, queen_side_rights) = self.castling_ability(color);
+                let (rook_on_king_side, rook_on_queen_side) = match color {
+                    Color::White => (mv.to == H1, mv.to == A1),
+                    Color::Black => (mv.to == H8, mv.to == A8),
+                };
+
+                if rook_on_king_side && king_side_rights {
+                    self.castling_ability.remove_side_rights(color, Piece::King);
+                }
+    
+                if rook_on_queen_side && queen_side_rights {
+                    self.castling_ability.remove_side_rights(color, Piece::Queen);
+                }
+            }
+        }
     }
 
     fn make_quiet(&mut self, mv: &Move) {
@@ -200,10 +248,6 @@ impl Board {
             // TODO
         }
 
-    }
-
-    fn remove_castle_rights(&mut self, color: Color) {
-        self.castling_ability.remove_rights(color);
     }
 
     fn get_piece_at(&self, square: Square) -> Option<Piece> {
@@ -332,7 +376,7 @@ impl Castle {
         };
     }
 
-    pub fn remove_rights(&mut self, color: Color) {
+    pub fn remove_all_rights(&mut self, color: Color) {
         match color {
             Color::White => {
                 self.white_king = false;
@@ -343,5 +387,20 @@ impl Castle {
                 self.black_queen = false;
             }
         };
+    }
+
+    pub fn remove_side_rights(&mut self, color: Color, side: Piece) {
+        match color {
+            Color::White => match side {
+                Piece::King => self.white_king = false,
+                Piece::Queen => self.white_queen = false,
+                _ => {}
+            }
+            Color::Black => match side {
+                Piece::King => self.black_king = false,
+                Piece::Queen => self.black_queen = false,
+                _ => {}
+            }
+        }
     }
 }
