@@ -176,8 +176,20 @@ impl Board {
     }
 
     fn make_quiet(&mut self, mv: &Move) {
+        let color = self.active_color;
+
+        let offset = match color {
+            Color::White => 8,
+            Color::Black => -8,
+        };
+
         // Pawn could be pushed twice adding en passant target
-        // TODO
+        if self.is_double_pawn_push(mv) {
+            self.en_passant_target = Some((mv.from as i8 + offset) as u8);
+        }
+
+        self.remove_piece(color, mv.piece_type, mv.from);
+        self.add_piece(color, mv.piece_type, mv.to);
     }   
 
     fn make_capture(&mut self, mv: &Move) {
@@ -255,6 +267,17 @@ impl Board {
             }
         }
         None
+    }
+
+    fn is_double_pawn_push(&self, mv: &Move) -> bool {
+        let color = self.active_color;
+
+        let offset: i8 = match color {
+            Color::White => 16,
+            Color::Black => -16,
+        };
+
+        mv.from as i8 + offset == mv.to as i8
     }
 
     pub fn print(&self) {
