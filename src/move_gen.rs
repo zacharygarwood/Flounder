@@ -396,6 +396,46 @@ impl MoveGenerator {
         true
     }
 
+    pub fn run_perft(&self, board: &Board, depth: usize) -> usize {
+        self.perft(board, depth)
+    }
+
+    fn perft(&self, board: &Board, depth: usize) -> usize {
+        let mut nodes = 0;
+        let moves = self.generate_moves(board);
+
+        if depth == 0 {
+            return 1;
+        }
+
+        if depth == 1 {
+            return moves.len();
+        }
+
+        for mv in moves {
+            let new_board = board.clone_with_move(&mv);
+            nodes += self.perft(&new_board, depth - 1);
+        }
+
+        nodes
+    }
+
+    pub fn divide(&self, board: &Board, depth: usize){
+
+        let moves = self.generate_moves(board);
+        let mut total = 0;
+
+        println!("Moves: {}", moves.len());
+
+        for mv in moves {
+            let new_board = board.clone_with_move(&mv);
+            let result = self.run_perft(&new_board, depth-1);
+            mv.print();
+            print!(" : {}\n", result);
+            total += result;
+        }
+        println!("Total: {}", total);
+    }
 }
 
 #[derive(Copy, Clone)]

@@ -85,20 +85,30 @@ impl Board {
         self.position.remove_piece(color, piece, square);
     }
 
-    pub fn make_move(&mut self, mv: &Move) {
-        let color = self.active_color;
+    pub fn clone_with_move(&self, mv: &Move) -> Board {
+        let mut board = *self;
+        board.make_move(mv);
+        board
+    }
 
+    fn change_color(&mut self) {
+        self.active_color = !self.active_color;
+    }
+    
+    pub fn make_move(&mut self, mv: &Move) {
         self.reset_en_passant_target();
         self.change_castling_rights(mv);
 
         match mv.move_type {
-            // MoveType::Quiet => self.make_quiet(),
+            MoveType::Quiet => self.make_quiet(mv),
             MoveType::Capture => self.make_capture(mv),
             MoveType::EnPassant => self.make_en_passant(mv),
             MoveType::Castle => self.make_castle(mv),
             MoveType::Promotion => self.make_promotion(mv),
             _ => {}
         }
+
+        self.change_color();
     }
 
     fn reset_en_passant_target(&mut self) {

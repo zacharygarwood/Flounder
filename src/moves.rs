@@ -5,7 +5,7 @@ pub const EAST: i8 = 1;
 pub const SOUTH: i8 = -NORTH;
 pub const WEST: i8 = -EAST;
 
-#[derive(Debug)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub struct Move {
     pub to: u8,
     pub from: u8,
@@ -24,11 +24,11 @@ impl Move {
     }
 
     pub fn print(&self) {
-        println!("From: {} To: {} Piece: {} Move: {}", square_to_algebraic(self.from), square_to_algebraic(self.to), self.piece_type, self.move_type);
+        print!("{}{}", square_to_algebraic(self.from), square_to_algebraic(self.to));
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub enum MoveType {
     Quiet,    // Non-capturing move
     Capture,  // Capturing move 
