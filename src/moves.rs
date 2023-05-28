@@ -26,6 +26,10 @@ impl Move {
     pub fn print(&self) {
         print!("{}{}", square_to_algebraic(self.from), square_to_algebraic(self.to));
     }
+
+    pub fn pretty_print(&self) {
+        println!("From: {} To: {} Piece: {} Move: {}", square_to_algebraic(self.from), square_to_algebraic(self.to), self.piece_type, self.move_type);
+    }
 }
 
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]

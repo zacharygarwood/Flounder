@@ -1,5 +1,5 @@
 use crate::pieces::{Piece, Color, PIECE_COUNT, COLOR_COUNT, PieceIterator};
-use crate::square::{Square, A1, D1, F1, G1, H1, A8, D8, F8, G8, H8};
+use crate::square::{Square, A1, D1, F1, G1, H1, A8, D8, F8, G8, H8, square_to_algebraic};
 use crate::bitboard::{Bitboard, BitboardOperations, WHITE_QUEEN_SIDE, WHITE_KING_SIDE, BLACK_QUEEN_SIDE, BLACK_KING_SIDE};
 use crate::util::print_bitboard;
 use crate::fen::fen_to_board;
@@ -146,18 +146,18 @@ impl Board {
             let captured_piece = self.get_piece_at(mv.to).unwrap();
 
             if captured_piece == Piece::Rook {
-                let (king_side_rights, queen_side_rights) = self.castling_ability(color);
+                let (king_side_rights, queen_side_rights) = self.castling_ability(!color);
                 let (rook_on_king_side, rook_on_queen_side) = match color {
-                    Color::White => (mv.to == H1, mv.to == A1),
-                    Color::Black => (mv.to == H8, mv.to == A8),
+                    Color::White => (mv.to == H8, mv.to == A8),
+                    Color::Black => (mv.to == H1, mv.to == A1),
                 };
 
                 if rook_on_king_side && king_side_rights {
-                    self.castling_ability.remove_side_rights(color, Piece::King);
+                    self.castling_ability.remove_side_rights(!color, Piece::King);
                 }
     
                 if rook_on_queen_side && queen_side_rights {
-                    self.castling_ability.remove_side_rights(color, Piece::Queen);
+                    self.castling_ability.remove_side_rights(!color, Piece::Queen);
                 }
             }
         }
@@ -168,18 +168,18 @@ impl Board {
             let captured_piece = self.get_piece_at(mv.to);
 
             if captured_piece != None && captured_piece.unwrap() == Piece::Rook {
-                let (king_side_rights, queen_side_rights) = self.castling_ability(color);
+                let (king_side_rights, queen_side_rights) = self.castling_ability(!color);
                 let (rook_on_king_side, rook_on_queen_side) = match color {
-                    Color::White => (mv.to == H1, mv.to == A1),
-                    Color::Black => (mv.to == H8, mv.to == A8),
+                    Color::White => (mv.to == H8, mv.to == A8),
+                    Color::Black => (mv.to == H1, mv.to == A1),
                 };
 
                 if rook_on_king_side && king_side_rights {
-                    self.castling_ability.remove_side_rights(color, Piece::King);
+                    self.castling_ability.remove_side_rights(!color, Piece::King);
                 }
     
                 if rook_on_queen_side && queen_side_rights {
-                    self.castling_ability.remove_side_rights(color, Piece::Queen);
+                    self.castling_ability.remove_side_rights(!color, Piece::Queen);
                 }
             }
         }
@@ -287,7 +287,12 @@ impl Board {
             Color::Black => -16,
         };
 
-        mv.from as i8 + offset == mv.to as i8
+        let is_double_push = mv.from as i8 + offset == mv.to as i8;
+        let is_pawn = mv.piece_type == Piece::Pawn;
+
+        is_double_push && is_pawn
+
+        
     }
 
     pub fn print(&self) {

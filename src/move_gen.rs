@@ -285,7 +285,7 @@ impl MoveGenerator {
     }
 
     fn is_legal_king_move(&self, board: &Board, mv: &Move) -> bool {
-        self.attacks_to(board, mv.to) != 0
+        self.attacks_to(board, mv.to) == 0
     }
 
     fn is_legal_non_king_move(&self, board: &Board, mv: &Move, checkers: Bitboard, pinned_pieces: Bitboard, king_square: Square) -> bool {
@@ -431,7 +431,7 @@ impl MoveGenerator {
             let new_board = board.clone_with_move(&mv);
             let result = self.run_perft(&new_board, depth-1);
             mv.print();
-            print!(" : {}\n", result);
+            print!(": {}\n", result);
             total += result;
         }
         println!("Total: {}", total);
