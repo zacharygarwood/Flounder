@@ -8,6 +8,8 @@ mod util;
 mod table;
 mod fen;
 mod magic;
+mod eval;
+
 use board::*;
 use move_gen::MoveGenerator;
 use pieces::{Piece, Color};
