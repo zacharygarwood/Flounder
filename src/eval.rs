@@ -138,7 +138,7 @@ fn eval_position(board: &Board) -> isize {
     let bishop_eval = eval_piece_position(color, Piece::Bishop, board) - eval_piece_position(!color, Piece::Bishop, board);
     let rook_eval = eval_piece_position(color, Piece::Rook, board) - eval_piece_position(!color, Piece::Rook, board);
     let queen_eval = eval_piece_position(color, Piece::Queen, board) - eval_piece_position(!color, Piece::Queen, board);
-    let king_eval = eval_piece_position(color, Piece::Pawn, board) - eval_piece_position(!color, Piece::Pawn, board);
+    let king_eval = eval_piece_position(color, Piece::King, board) - eval_piece_position(!color, Piece::King, board);
 
     pawn_eval + knight_eval + bishop_eval + rook_eval + queen_eval + king_eval
 }
