@@ -6,11 +6,8 @@ use crate::moves::Move;
 // Using i32 MIN and MAX to separate out mating moves
 // There was an issue where the engine would not play the move that leads to mate
 // as the move values were the same 
-// const INITIAL_ALPHA: isize = (std::i32::MIN) as isize + 1;
-// const INITIAL_BETA: isize = (std::i32::MAX) as isize - 1;
-
-const INITIAL_ALPHA: isize = std::isize::MIN + 1;
-const INITIAL_BETA: isize = std::isize::MAX - 1;
+const INITIAL_ALPHA: isize = (std::i32::MIN) as isize + 1;
+const INITIAL_BETA: isize = (std::i32::MAX) as isize - 1;
 
 const MATE_VALUE: isize = std::isize::MIN + 1;
 
