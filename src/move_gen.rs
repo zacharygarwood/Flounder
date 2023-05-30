@@ -268,7 +268,7 @@ impl MoveGenerator {
 
     }
 
-    fn king_square(&self, board: &Board) -> Square {
+    pub fn king_square(&self, board: &Board) -> Square {
         let color = board.active_color();
         board.bb(color, Piece::King).trailing_zeros() as Square
     }

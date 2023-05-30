@@ -91,7 +91,7 @@ impl Board {
         board
     }
 
-    fn change_color(&mut self) {
+    pub fn change_color(&mut self) {
         self.active_color = !self.active_color;
     }
     
