@@ -267,7 +267,7 @@ impl Board {
 
     }
 
-    fn get_piece_at(&self, square: Square) -> Option<Piece> {
+    pub fn get_piece_at(&self, square: Square) -> Option<Piece> {
         let square_bb = Bitboard::square_to_bitboard(square);
 
         let iter = PieceIterator::new();

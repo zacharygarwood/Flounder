@@ -45,6 +45,19 @@ impl std::fmt::Display for Color {
     }
 }
 
+impl Piece {
+    pub fn index(&self) -> usize {
+        match self {
+            Piece::Pawn => 5,
+            Piece::Knight => 4,
+            Piece::Bishop => 3,
+            Piece::Rook => 2,
+            Piece::Queen => 1,
+            Piece::King => 0,
+        }
+    }
+}
+
 pub struct PieceIterator {
     index: usize,
 }
@@ -135,6 +148,7 @@ impl IndexMut<Piece> for [Bitboard; PIECE_COUNT] {
         }
     }
 }
+
 
 impl Index<Color> for [Bitboard; COLOR_COUNT] {
     type Output = Bitboard;
