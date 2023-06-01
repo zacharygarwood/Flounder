@@ -6,7 +6,7 @@ use crate::fen::fen_to_board;
 use crate::moves::{Move, MoveType};
 
 // Represents the chess board using bitboards
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 pub struct Board {
     pub position: Position,
     pub active_color: Color,
@@ -323,7 +323,7 @@ impl Board {
 }
 
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 pub struct Position {
     pieces: [Bitboard; PIECE_COUNT], // Six bitboards for the pieces
     colors: [Bitboard; COLOR_COUNT], // Two bitboards for the colors
@@ -381,7 +381,7 @@ impl Position {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 pub struct Castle {
     white_king: bool,
     white_queen: bool,

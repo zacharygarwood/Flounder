@@ -7,7 +7,7 @@ use crate::square::square_to_rank_file;
 use crate::square::Square;
 use crate::pieces::Piece;
 
-const ROOK_RELEVANT_BITS: [usize; 64] = [
+static ROOK_RELEVANT_BITS: [usize; 64] = [
     12, 11, 11, 11, 11, 11, 11, 12,
     11, 10, 10, 10, 10, 10, 10, 11,
     11, 10, 10, 10, 10, 10, 10, 11,
@@ -18,7 +18,7 @@ const ROOK_RELEVANT_BITS: [usize; 64] = [
     12, 11, 11, 11, 11, 11, 11, 12
 ];
 
-const BISHOP_RELEVANT_BITS: [usize; 64] = [
+static BISHOP_RELEVANT_BITS: [usize; 64] = [
     6, 5, 5, 5, 5, 5, 5, 6,
     5, 5, 5, 5, 5, 5, 5, 5,
     5, 5, 7, 7, 7, 7, 5, 5,
@@ -29,7 +29,7 @@ const BISHOP_RELEVANT_BITS: [usize; 64] = [
     6, 5, 5, 5, 5, 5, 5, 6
 ];
 
-const ROOK_MAGICS: [u64; 64] = [
+static ROOK_MAGICS: [u64; 64] = [
     0x208000211080c000,
     0x8040024610002000,
     0x80100020008148,
@@ -96,7 +96,7 @@ const ROOK_MAGICS: [u64; 64] = [
     0x3008805400238102,
 ];
 
-const BISHOP_MAGICS: [u64; 64] = [
+static BISHOP_MAGICS: [u64; 64] = [
     0x9a0a00f19002080,
     0x1010030b00a000,
     0x209434040a480200,

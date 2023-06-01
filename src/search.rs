@@ -6,10 +6,10 @@ use crate::moves::{Move, MoveType};
 // Using i32 MIN and MAX to separate out mating moves
 // There was an issue where the engine would not play the move that leads to mate
 // as the move values were the same 
-const INITIAL_ALPHA: isize = (std::i32::MIN) as isize + 1;
-const INITIAL_BETA: isize = (std::i32::MAX) as isize - 1;
+const INITIAL_ALPHA: i32 = (std::i16::MIN) as i32 + 1;
+const INITIAL_BETA: i32 = (std::i16::MAX) as i32 - 1;
 
-const MATE_VALUE: isize = std::isize::MIN + 1;
+const MATE_VALUE: i32 = std::i32::MIN + 1;
 
 pub struct Searcher {
     move_gen: MoveGenerator
@@ -22,10 +22,10 @@ impl Searcher {
         }
     }
 
-    pub fn best_move(&self, board: &Board, depth: usize) -> (isize, Option<Move>) {
+    pub fn best_move(&self, board: &Board, depth: u8) -> (i32, Option<Move>) {
         let moves = self.move_gen.generate_moves(board);
         let mut best_move = None;
-        let mut best_score = std::isize::MIN + 1;
+        let mut best_score = std::i32::MIN + 1;
 
         for mv in moves {
             let new_board = board.clone_with_move(&mv);
@@ -38,9 +38,9 @@ impl Searcher {
 
         (best_score, best_move)
     }
-    fn negamax_alpha_beta(&self, board: &Board, mut alpha: isize, beta: isize, depth: usize) -> isize {
+    fn negamax_alpha_beta(&self, board: &Board, mut alpha: i32, beta: i32, depth: u8) -> i32 {
         if depth == 0 {
-            return evaluate(board);
+            return evaluate(board) as i32;
         }
 
         let mut moves = self.move_gen.generate_moves(board);
@@ -69,7 +69,7 @@ impl Searcher {
     }
 }
 
-pub const MVV_LVA: [[isize; 6]; 6] = [
+pub const MVV_LVA: [[i8; 6]; 6] = [
     [0, 0, 0, 0, 0, 0],       // victim K, attacker K, Q, R, B, N, P, None
     [50, 51, 52, 53, 54, 55], // victim Q, attacker K, Q, R, B, N, P, None
     [40, 41, 42, 43, 44, 45], // victim R, attacker K, Q, R, B, N, P, None
