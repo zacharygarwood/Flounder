@@ -1,19 +1,19 @@
 use crate::board::Board;
 use crate::bitboard::{Bitboard, BitboardIterator, BitboardOperations, RANK_2, RANK_3, RANK_6, RANK_7, WHITE_KING_SIDE, WHITE_QUEEN_SIDE, BLACK_KING_SIDE, BLACK_QUEEN_SIDE};
-use crate::table::Table;
+use crate::lookup::LookupTable;
 use crate::pieces::{Piece, Color, PromotionPieceIterator};
 use crate::moves::{Move, MoveType, NORTH, EAST, SOUTH, WEST};
 use crate::square::{Square, C1, C8, E1, E8, G1, G8, square_to_rank_file};
 use crate::util::print_bitboard;
 
 pub struct MoveGenerator {
-    pub lookup: Table
+    pub lookup: LookupTable
 }
 
 impl MoveGenerator {
     pub fn new() -> Self {
         Self {
-            lookup: Table::init(),
+            lookup: LookupTable::init(),
         }
     }
 

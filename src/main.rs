@@ -5,11 +5,12 @@ mod move_gen;
 mod square;
 mod bitboard;
 mod util;
-mod table;
+mod lookup;
 mod fen;
 mod magic;
 mod eval;
 mod search;
+mod zobrist;
 
 use board::*;
 use search::Searcher;

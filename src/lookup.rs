@@ -4,7 +4,7 @@ use crate::square::Square;
 use crate::pieces::Piece;
 use crate::magic::Magic;
 
-pub struct Table {
+pub struct LookupTable {
     pub knight_lookup: [Bitboard; 64],
     pub king_lookup: [Bitboard; 64],
     pub magic_table: Magic,
@@ -12,7 +12,7 @@ pub struct Table {
     pub exclusive_between_lookup: [[Bitboard; 64]; 64],
 }
 
-impl Table {
+impl LookupTable {
     pub fn init() -> Self {
         let knight_lookup = generate_knight_lookup_table();
         let king_lookup = generate_king_lookup_table();
