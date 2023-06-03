@@ -137,7 +137,7 @@ impl MoveGenerator {
         let bb_iter = BitboardIterator::new(bitboard);
         let promotion_pieces = PromotionPieceIterator::new();
         for square in bb_iter {
-            for piece in promotion_pieces.clone() {
+            for piece in promotion_pieces {
                 let mv = Move::new((square as i8 - offset) as u8, square, piece, move_type);
                 moves.push(mv);
             }

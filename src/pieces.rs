@@ -21,6 +21,44 @@ pub enum Color {
     Black,
 }
 
+impl Color {
+    pub fn index(&self) -> usize {
+        match self {
+            Color::White => 0,
+            Color::Black => 1,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct ColorIterator {
+    index: usize,
+}
+
+impl ColorIterator {
+    pub fn new() -> Self {
+        ColorIterator { index: 0 }
+    }
+}
+
+impl Iterator for ColorIterator {
+    type Item = Color;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index < 2 {
+            let color = match self.index {
+                0 => Color::White,
+                1 => Color::Black,
+                _ => unreachable!(),
+            };
+            self.index += 1;
+            Some(color)
+        } else {
+            None
+        }
+    }
+}
+
 impl std::fmt::Display for Piece {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let piece_str = match self {
@@ -58,6 +96,7 @@ impl Piece {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
 pub struct PieceIterator {
     index: usize,
 }
