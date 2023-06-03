@@ -17,7 +17,7 @@ impl MoveGenerator {
         }
     }
 
-    pub fn generate_moves(&self, board: &Board) -> Vec<Move>{
+    pub fn generate_moves(&self, board: &Board) -> Vec<Move> {
         let mut moves = Vec::new();
         
         // Generate moves for each piece type
@@ -35,6 +35,13 @@ impl MoveGenerator {
 
         moves.retain(|mv| self.is_legal(board, mv, checkers, pinned_pieces, king_square));
     
+        moves
+    }
+
+    pub fn generate_captures(&self, board: &Board) -> Vec<Move> {
+        let mut moves = self.generate_moves(board);
+        moves.retain(|mv| (mv.move_type == MoveType::Capture || mv.move_type == MoveType::EnPassant || mv.move_type == MoveType::Promotion));
+
         moves
     }
     

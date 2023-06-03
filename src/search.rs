@@ -1,13 +1,12 @@
 use crate::move_gen::MoveGenerator;
-use crate::eval::{evaluate, self};
+use crate::eval::evaluate;
 use crate::board::Board;
 use crate::moves::{Move, MoveType};
 
-// Using i32 MIN and MAX to separate out mating moves
+// Using i16 MIN and MAX to separate out mating moves
 // There was an issue where the engine would not play the move that leads to mate
 // as the move values were the same 
-const INITIAL_ALPHA: i32 = (std::i16::MIN) as i32 + 1;
-const INITIAL_BETA: i32 = (std::i16::MAX) as i32 - 1;
+const INITIAL_ALPHA: i16 = std::i16::MIN + 1;
 
 const MATE_VALUE: i32 = std::i32::MIN + 1;
 
@@ -22,14 +21,16 @@ impl Searcher {
         }
     }
 
-    pub fn best_move(&self, board: &Board, depth: u8) -> (i32, Option<Move>) {
-        let moves = self.move_gen.generate_moves(board);
+    pub fn best_move_negamax_ab(&self, board: &Board, depth: u8) -> (i32, Option<Move>) {
+        let mut moves = self.move_gen.generate_moves(board);
         let mut best_move = None;
-        let mut best_score = std::i32::MIN + 1;
+        let mut best_score = INITIAL_ALPHA as i32;
+
+        mvv_lva_sort_moves(board, &mut moves);
 
         for mv in moves {
             let new_board = board.clone_with_move(&mv);
-            let score = -self.negamax_alpha_beta(&new_board, INITIAL_ALPHA, INITIAL_BETA, depth);
+            let score = -self.negamax_alpha_beta(&new_board, INITIAL_ALPHA as i32, -best_score, depth - 1);
             if score > best_score {
                 best_move = Some(mv);
                 best_score = score;
@@ -38,22 +39,24 @@ impl Searcher {
 
         (best_score, best_move)
     }
-    fn negamax_alpha_beta(&self, board: &Board, mut alpha: i32, beta: i32, depth: u8) -> i32 {
+
+    fn negamax_alpha_beta(&self, board: &Board, alpha: i32, beta: i32, depth: u8) -> i32 {
         if depth == 0 {
-            return evaluate(board) as i32;
+            return self.quiescence(board, alpha, beta);
         }
 
+        let mut alpha = alpha;
         let mut moves = self.move_gen.generate_moves(board);
+        mvv_lva_sort_moves(board, &mut moves);
 
+        // Checkmate or Stalemate
         if moves.len() == 0 {
             if self.move_gen.attacks_to(board, self.move_gen.king_square(board)) != 0 {
-                return MATE_VALUE;
-            } else {
+                return MATE_VALUE + depth as i32;
+            } else { 
                 return 0;
             }
         }
-
-        mvv_lva_sort_moves(board, &mut moves);
 
         for mv in moves {
             let new_board = board.clone_with_move(&mv);
@@ -65,8 +68,39 @@ impl Searcher {
                 alpha = score;
             }
         }
-        alpha
+        return alpha;
     }
+
+    fn quiescence(&self, board: &Board, alpha: i32, beta: i32) -> i32 {
+        let mut alpha = alpha;
+        let beta = beta;
+
+        let stand_pat = evaluate(board) as i32;
+
+        if stand_pat >= beta {
+            return beta;
+        }
+        if alpha < stand_pat {
+            alpha = stand_pat;
+        }
+
+        let mut moves = self.move_gen.generate_captures(board);
+        mvv_lva_sort_moves(board, &mut moves);
+
+        for mv in moves {
+            let new_board = board.clone_with_move(&mv);
+            let score = -self.quiescence(&new_board, -beta, -alpha);
+
+            if score >= beta {
+                return beta;
+            }
+            if score > alpha {
+                alpha = score;
+            }
+        }
+        return alpha;
+    }
+
 }
 
 pub const MVV_LVA: [[i8; 6]; 6] = [

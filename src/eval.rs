@@ -91,9 +91,10 @@ fn has_queen_with_most_one_minor_piece(color: Color, board: &Board) -> bool {
     let has_queen = board.bb(color, Piece::Queen) != 0;
 
     if has_queen {
-        let pieces = board.bb(color, Piece::Knight) | board.bb(color, Piece::Bishop) | board.bb(color, Piece::Rook);
-        let has_no_other_pieces = pieces == 0;
-        let has_one_minor_piece = (pieces & !board.bb(color, Piece::Rook)).count_ones() <= 1;
+        let minor_pieces = board.bb(color, Piece::Knight) | board.bb(color, Piece::Bishop);
+        let rooks = board.bb(color, Piece::Rook);
+        let has_no_other_pieces = minor_pieces | rooks == 0;
+        let has_one_minor_piece = minor_pieces.count_ones() <= 1 && rooks == 0;
 
         return has_no_other_pieces || has_one_minor_piece;
     }
@@ -125,8 +126,13 @@ fn eval_piece_position(color:Color, piece: Piece, piece_square_table: &[i16; 64]
     let iter = BitboardIterator::new(pieces);
     for square in iter {
         match color {
-            Color::White => score += piece_square_table[63 - square as usize],
-            Color::Black => score += piece_square_table[square as usize],
+            Color::White => {
+                let index = (7 - square / 8) * 8 + square % 8;
+                score += piece_square_table[index as usize];
+            }
+            Color::Black => {
+                score += piece_square_table[square as usize];
+            }
         }
     }
     score
