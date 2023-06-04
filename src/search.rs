@@ -9,7 +9,7 @@ use std::cmp::{max, min};
 // Using i16 MIN and MAX to separate out mating moves
 // There was an issue where the engine would not play the move that leads to mate
 // as the move values were the same 
-const INITIAL_ALPHA: i16 = std::i16::MIN + 1;
+const NEG_INF: i16 = std::i16::MIN + 1;
 
 const MATE_VALUE: i32 = std::i32::MIN + 1;
 
@@ -28,10 +28,24 @@ impl Searcher {
         }
     }
 
-    pub fn best_move_negamax_ab(&mut self, board: &Board, depth: u8) -> (i32, Option<Move>) {
+    pub fn best_move(&mut self, board: &Board, max_depth: u8) -> (i32, Option<Move>) {
+        let mut best_move = None;
+        let mut best_score = NEG_INF as i32;
+
+        for depth in 1..max_depth {
+            let (score, mv) = self.best_move_negamax_ab(board, depth);
+            if score > best_score {
+                best_score = score;
+                best_move = mv;
+            }
+        }
+        (best_score, best_move)
+    }
+
+    fn best_move_negamax_ab(&mut self, board: &Board, depth: u8) -> (i32, Option<Move>) {
         let mut moves = self.move_gen.generate_moves(board);
         let mut best_move = None;
-        let mut best_score = INITIAL_ALPHA as i32;
+        let mut best_score = NEG_INF as i32;
         let mut tt_best_move = None;
 
         let board_hash = self.zobrist.hash(board);
@@ -44,7 +58,7 @@ impl Searcher {
 
         for mv in moves {
             let new_board = board.clone_with_move(&mv);
-            let score = -self.negamax_alpha_beta(&new_board, INITIAL_ALPHA as i32, -best_score, depth - 1);
+            let score = -self.negamax_alpha_beta(&new_board, NEG_INF as i32, -best_score, depth - 1);
             if score > best_score {
                 best_move = Some(mv);
                 best_score = score;
@@ -55,6 +69,7 @@ impl Searcher {
     }
 
     fn negamax_alpha_beta(&mut self, board: &Board, alpha: i32, beta: i32, depth: u8) -> i32 {
+        let original_alpha = alpha;
         let mut alpha = alpha;
         let mut beta = beta;
         let mut tt_best_move = None;
@@ -75,10 +90,7 @@ impl Searcher {
         }
 
         if depth == 0 {
-            let score = self.quiescence(board, alpha, beta, depth);
-            self.transposition_table.store(board_hash, score,  None, depth, Bounds::Exact);
-
-            return score;
+            return self.quiescence(board, alpha, beta);
         }
 
         let mut moves = self.move_gen.generate_moves(board);
@@ -87,37 +99,39 @@ impl Searcher {
         // Checkmate or Stalemate
         if moves.len() == 0 {
             if self.move_gen.attacks_to(board, self.move_gen.king_square(board)) != 0 {
-                let score = MATE_VALUE + depth as i32;
-                self.transposition_table.store(board_hash, score,  None, depth, Bounds::Exact);
-
-                return score;
+                return MATE_VALUE + depth as i32;
             } else { 
                 return 0;
             }
         }
 
+        let mut score = NEG_INF as i32;
+        let mut best_move = None;
         for mv in moves {
             let new_board = board.clone_with_move(&mv);
-            let score = -self.negamax_alpha_beta(&new_board, -beta, -alpha, depth - 1);
-            if score >= beta {
-                self.transposition_table.store(board_hash, beta,  Some(mv), depth, Bounds::Lower);
-
-                return beta;
-            }
-            if score > alpha {
-                alpha = score;
+            score = max(score, -self.negamax_alpha_beta(&new_board, -beta, -alpha, depth - 1));
+            alpha = max(alpha, score);
+            if alpha >= beta {
+                best_move = Some(mv);
+                break;
             }
         }
 
-        self.transposition_table.store(board_hash, alpha, None, depth, Bounds::Upper);
+        let bound = if score <= original_alpha {
+            Bounds::Upper
+        } else if score >= beta {
+            Bounds::Lower
+        } else {
+            Bounds::Exact
+        };
 
-        return alpha;
+        self.transposition_table.store(board_hash, score, best_move, depth, bound);
+
+        return score;
     }
 
-    fn quiescence(&mut self, board: &Board, alpha: i32, beta: i32, depth: u8) -> i32 {
+    fn quiescence(&mut self, board: &Board, alpha: i32, beta: i32) -> i32 {
         let mut alpha = alpha;
-        let mut beta = beta;
-        let mut tt_best_move = None;
 
         let stand_pat = evaluate(board) as i32;
 
@@ -128,37 +142,21 @@ impl Searcher {
             alpha = stand_pat;
         }
 
-        let board_hash = self.zobrist.hash(board);
-        let tt_entry = self.transposition_table.retrieve(board_hash, depth);
-        if let Some(entry) = tt_entry {
-            tt_best_move = entry.best_move;
-            match entry.bounds {
-                Bounds::Exact => return entry.eval,
-                Bounds::Lower => alpha = max(alpha, entry.eval),
-                Bounds::Upper => beta = min(beta, entry.eval),
-            }
-            if alpha >= beta {
-                return entry.eval;
-            }
-        }
 
         let mut moves = self.move_gen.generate_captures(board);
-        sort_moves(board, &mut moves, tt_best_move);
+        mvv_lva_sort_moves(board, &mut moves);
 
         for mv in moves {
             let new_board = board.clone_with_move(&mv);
-            let score = -self.quiescence(&new_board, -beta, -alpha, depth + 1);
+            let score = -self.quiescence(&new_board, -beta, -alpha);
 
             if score >= beta {
-                self.transposition_table.store(board_hash, beta,  Some(mv), depth, Bounds::Lower);
                 return beta;
             }
             if score > alpha {
                 alpha = score;
             }
         }
-
-        self.transposition_table.store(board_hash, alpha,  None, depth, Bounds::Upper);
 
         return alpha;
     }
@@ -183,6 +181,21 @@ pub fn sort_moves(board: &Board, moves: &mut [Move], tt_best_move: Option<Move>)
             }
         }
 
+        if mv.move_type == MoveType::EnPassant {
+            return 0;
+        } 
+
+        let capturing_piece = board.get_piece_at(mv.from);
+        let captured_piece = board.get_piece_at(mv.to);
+        if captured_piece != None && capturing_piece != None {
+            return -MVV_LVA[captured_piece.unwrap().index()][capturing_piece.unwrap().index()];
+        }
+        0
+    })
+}
+
+pub fn mvv_lva_sort_moves(board: &Board, moves: &mut [Move]) {
+    moves.sort_by_cached_key(|mv: &Move| {
         if mv.move_type == MoveType::EnPassant {
             return 0;
         } 

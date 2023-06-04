@@ -18,17 +18,23 @@ use search::Searcher;
 
 
 use std::time::Instant;
+use search::sort_moves;
+use move_gen::MoveGenerator;
+use moves::{Move, MoveType};
+use pieces::Piece;
 
 fn main() {
     // Initialize the bitboard with some sample positions
-    let board = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    let board = Board::new("r1b1kbnr/pppp1ppp/2n5/4P3/8/2N2N2/PqPBPPPP/R2QKB1R b KQkq - 1 6");
+    let move_gen = MoveGenerator::new();
     let mut searcher = Searcher::new();
+    let bad_move = Move::new(62, 47, Piece::Knight, MoveType::Quiet);
 
     board.print();
 
     println!("// Negamax AB//");
     let now = Instant::now();
-    let (eval, mv) = searcher.best_move_negamax_ab(&board, 6);
+    let (eval, mv) = searcher.best_move(&board, 7);
     println!("Time: {}", now.elapsed().as_secs());
     println!("Eval: {}", eval);
 
