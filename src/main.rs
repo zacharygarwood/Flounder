@@ -11,6 +11,7 @@ mod magic;
 mod eval;
 mod search;
 mod zobrist;
+mod transposition;
 
 use board::*;
 use search::Searcher;
