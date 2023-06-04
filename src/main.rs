@@ -34,7 +34,7 @@ fn main() {
 
     println!("// Negamax AB//");
     let now = Instant::now();
-    let (eval, mv) = searcher.best_move(&board, 7);
+    let (eval, mv) = searcher.best_move_negamax_ab(&board, 7);
     println!("Time: {}", now.elapsed().as_secs());
     println!("Eval: {}", eval);
 

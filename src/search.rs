@@ -36,12 +36,8 @@ impl Searcher {
         let mut best_move = None;
         let mut best_score = NEG_INF as i32;
 
-        for depth in 1..max_depth {
-            let (score, mv) = self.best_move_negamax_ab(board, depth);
-            if score > best_score {
-                best_score = score;
-                best_move = mv;
-            }
+        for depth in 1..max_depth+1 {
+            (best_score, best_move) = self.best_move_negamax_ab(board, depth);
         }
         (best_score, best_move)
     }
@@ -73,6 +69,8 @@ impl Searcher {
         println!("Value: {}", value);
         GLOBAL_VARIABLE.store(0, Ordering::Relaxed);
 
+        self.transposition_table.store(board_hash, best_score, best_move, depth, Bounds::Lower);
+
         (best_score, best_move)
     }
 
@@ -86,14 +84,16 @@ impl Searcher {
         let board_hash = self.zobrist.hash(board);
         let tt_entry = self.transposition_table.retrieve(board_hash, depth);
         if let Some(entry) = tt_entry {
-            tt_best_move = entry.best_move;
-            match entry.bounds {
-                Bounds::Exact => return entry.eval,
-                Bounds::Lower => alpha = max(alpha, entry.eval),
-                Bounds::Upper => beta = min(beta, entry.eval),
-            }
-            if alpha >= beta {
-                return entry.eval;
+            if entry.depth >= depth {
+                tt_best_move = entry.best_move;
+                match entry.bounds {
+                    Bounds::Exact => return entry.eval,
+                    Bounds::Lower => alpha = max(alpha, entry.eval),
+                    Bounds::Upper => beta = min(beta, entry.eval),
+                }
+                if alpha >= beta {
+                    return entry.eval;
+                }
             }
         }
 
