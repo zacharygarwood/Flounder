@@ -6,9 +6,6 @@ use crate::transposition::{TranspositionTable, Entry, Bounds};
 use crate::zobrist::ZobristTable;
 use std::cmp::{max, min};
 
-use std::sync::atomic::{AtomicIsize, Ordering};
-
-static GLOBAL_VARIABLE: AtomicIsize = AtomicIsize::new(0);
 
 // Using i16 MIN and MAX to separate out mating moves
 // There was an issue where the engine would not play the move that leads to mate
@@ -42,14 +39,14 @@ impl Searcher {
         (best_score, best_move)
     }
 
-    pub fn best_move_negamax_ab(&mut self, board: &Board, depth: u8) -> (i32, Option<Move>) {
+    fn best_move_negamax_ab(&mut self, board: &Board, depth: u8) -> (i32, Option<Move>) {
         let mut moves = self.move_gen.generate_moves(board);
         let mut best_move = None;
         let mut best_score = NEG_INF as i32;
         let mut tt_best_move = None;
 
         let board_hash = self.zobrist.hash(board);
-        let tt_entry = self.transposition_table.retrieve(board_hash, depth);
+        let tt_entry = self.transposition_table.retrieve(board_hash);
         if let Some(entry) = tt_entry {
             tt_best_move = entry.best_move;
         }
@@ -65,10 +62,6 @@ impl Searcher {
             }
         }
 
-        let value = GLOBAL_VARIABLE.swap(0, Ordering::Relaxed);
-        println!("Value: {}", value);
-        GLOBAL_VARIABLE.store(0, Ordering::Relaxed);
-
         self.transposition_table.store(board_hash, best_score, best_move, depth, Bounds::Lower);
 
         (best_score, best_move)
@@ -82,7 +75,7 @@ impl Searcher {
 
         // Check transposition table for an entry
         let board_hash = self.zobrist.hash(board);
-        let tt_entry = self.transposition_table.retrieve(board_hash, depth);
+        let tt_entry = self.transposition_table.retrieve(board_hash);
         if let Some(entry) = tt_entry {
             if entry.depth >= depth {
                 tt_best_move = entry.best_move;
@@ -98,7 +91,6 @@ impl Searcher {
         }
 
         if depth == 0 {
-            GLOBAL_VARIABLE.fetch_add(1, Ordering::Relaxed);
             return self.quiescence(board, alpha, beta);
         }
 
@@ -141,7 +133,6 @@ impl Searcher {
 
     fn quiescence(&mut self, board: &Board, alpha: i32, beta: i32) -> i32 {
         let mut alpha = alpha;
-        GLOBAL_VARIABLE.fetch_add(1, Ordering::Relaxed);
 
         let stand_pat = evaluate(board) as i32;
 

@@ -30,7 +30,7 @@ impl TranspositionTable {
         }
     }
 
-    pub fn retrieve(&self, key: u64, depth: u8) -> Option<&Entry> {
+    pub fn retrieve(&self, key: u64) -> Option<&Entry> {
         let entry = self.table.get(&key);
         if entry.is_some() && entry.unwrap().hash_key == key {
             return entry;
