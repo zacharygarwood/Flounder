@@ -11,23 +11,23 @@ mod magic;
 mod eval;
 mod search;
 mod zobrist;
+mod transposition;
 
 use board::*;
 use search::Searcher;
-
 
 use std::time::Instant;
 
 fn main() {
     // Initialize the bitboard with some sample positions
     let board = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    let searcher = Searcher::new();
+    let mut searcher = Searcher::new();
 
     board.print();
 
     println!("// Negamax AB//");
     let now = Instant::now();
-    let (eval, mv) = searcher.best_move_negamax_ab(&board, 7);
+    let (eval, mv) = searcher.best_move(&board, 7);
     println!("Time: {}", now.elapsed().as_secs());
     println!("Eval: {}", eval);
 
