@@ -1,6 +1,6 @@
 # Flounder
 
-![Flounder](./img/flounder.png)
+![Flounder](./img/flounder.gif)
 
 Flounder is a chess engine created in Rust. Don't let its looks deceive you!
 
