@@ -6,6 +6,10 @@ use crate::transposition::{TranspositionTable, Entry, Bounds};
 use crate::zobrist::ZobristTable;
 use std::cmp::{max, min};
 
+use std::sync::atomic::{AtomicIsize, Ordering};
+
+static GLOBAL_VARIABLE: AtomicIsize = AtomicIsize::new(0);
+
 // Using i16 MIN and MAX to separate out mating moves
 // There was an issue where the engine would not play the move that leads to mate
 // as the move values were the same 
@@ -42,7 +46,7 @@ impl Searcher {
         (best_score, best_move)
     }
 
-    fn best_move_negamax_ab(&mut self, board: &Board, depth: u8) -> (i32, Option<Move>) {
+    pub fn best_move_negamax_ab(&mut self, board: &Board, depth: u8) -> (i32, Option<Move>) {
         let mut moves = self.move_gen.generate_moves(board);
         let mut best_move = None;
         let mut best_score = NEG_INF as i32;
@@ -64,6 +68,10 @@ impl Searcher {
                 best_score = score;
             }
         }
+
+        let value = GLOBAL_VARIABLE.swap(0, Ordering::Relaxed);
+        println!("Value: {}", value);
+        GLOBAL_VARIABLE.store(0, Ordering::Relaxed);
 
         (best_score, best_move)
     }
@@ -90,6 +98,7 @@ impl Searcher {
         }
 
         if depth == 0 {
+            GLOBAL_VARIABLE.fetch_add(1, Ordering::Relaxed);
             return self.quiescence(board, alpha, beta);
         }
 
@@ -132,6 +141,7 @@ impl Searcher {
 
     fn quiescence(&mut self, board: &Board, alpha: i32, beta: i32) -> i32 {
         let mut alpha = alpha;
+        GLOBAL_VARIABLE.fetch_add(1, Ordering::Relaxed);
 
         let stand_pat = evaluate(board) as i32;
 

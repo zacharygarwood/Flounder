@@ -25,7 +25,7 @@ use pieces::Piece;
 
 fn main() {
     // Initialize the bitboard with some sample positions
-    let board = Board::new("r1b1kbnr/pppp1ppp/2n5/4P3/8/2N2N2/PqPBPPPP/R2QKB1R b KQkq - 1 6");
+    let board = Board::new("r1b1kb1r/ppppnppp/2n5/1N2P3/8/q4N2/P1PBPPPP/1R1QKB1R b Kkq - 5 8");
     let move_gen = MoveGenerator::new();
     let mut searcher = Searcher::new();
     let bad_move = Move::new(62, 47, Piece::Knight, MoveType::Quiet);
