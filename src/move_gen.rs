@@ -38,9 +38,10 @@ impl MoveGenerator {
         moves
     }
 
-    pub fn generate_captures(&self, board: &Board) -> Vec<Move> {
+    pub fn generate_quiescence_moves(&self, board: &Board) -> Vec<Move> {
         let mut moves = self.generate_moves(board);
-        moves.retain(|mv| (mv.move_type == MoveType::Capture || mv.move_type == MoveType::EnPassant || mv.move_type == MoveType::Promotion));
+        
+        moves.retain(|mv| (self.is_capture(mv) || self.is_promotion(mv) || self.is_check(board, mv)));
 
         moves
     }
@@ -401,6 +402,19 @@ impl MoveGenerator {
         }
 
         true
+    }
+
+    fn is_capture(&self, mv: &Move) -> bool {
+        mv.move_type == MoveType::Capture || mv.move_type == MoveType::EnPassant
+    }
+
+    fn is_promotion(&self, mv: &Move) -> bool {
+        mv.move_type == MoveType::Promotion
+    }
+
+    fn is_check(&self, board: &Board, mv: &Move) -> bool {
+        let new_board = board.clone_with_move(mv);
+        self.attacks_to(&new_board, self.king_square(&new_board)) != 0
     }
 
     pub fn run_perft(&self, board: &Board, depth: usize) -> usize {
