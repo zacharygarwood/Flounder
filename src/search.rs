@@ -1,16 +1,22 @@
 use crate::move_gen::MoveGenerator;
-use crate::eval::evaluate;
+use crate::eval::{evaluate, self};
 use crate::board::Board;
 use crate::moves::{Move, MoveType};
 use crate::transposition::{TranspositionTable, Entry, Bounds};
 use crate::zobrist::ZobristTable;
 use std::cmp::{max, min};
 
+use std::sync::atomic::{AtomicIsize, Ordering};
+
+static GLOBAL_VARIABLE: AtomicIsize = AtomicIsize::new(0);
+
+
 
 // Using i16 MIN and MAX to separate out mating moves
 // There was an issue where the engine would not play the move that leads to mate
 // as the move values were the same 
-const NEG_INF: i16 = std::i16::MIN + 1;
+const NEG_INF: i32 = (std::i16::MIN + 1) as i32;
+const INF: i32 = (std::i16::MAX - 1) as i32;
 
 const MATE_VALUE: i32 = std::i32::MIN + 1;
 
@@ -34,64 +40,48 @@ impl Searcher {
         let mut best_score = NEG_INF as i32;
 
         for depth in 1..max_depth+1 {
-            (best_score, best_move) = self.best_move_negamax_ab(board, depth);
+            let board_hash = self.zobrist.hash(board);
+            (best_score, best_move) = self.negamax_alpha_beta(board, NEG_INF, INF, depth);
+
+            let value = GLOBAL_VARIABLE.load(Ordering::Relaxed);
+            GLOBAL_VARIABLE.store(0, Ordering::Relaxed);
+            println!("Value: {}", value);
+
+            self.transposition_table.store(board_hash, best_score, best_move, depth, Bounds::Lower);
         }
         (best_score, best_move)
     }
 
-    fn best_move_negamax_ab(&mut self, board: &Board, depth: u8) -> (i32, Option<Move>) {
-        let mut moves = self.move_gen.generate_moves(board);
-        let mut best_move = None;
-        let mut best_score = NEG_INF as i32;
-        let mut tt_best_move = None;
-
-        let board_hash = self.zobrist.hash(board);
-        let tt_entry = self.transposition_table.retrieve(board_hash);
-        if let Some(entry) = tt_entry {
-            tt_best_move = entry.best_move;
-        }
-
-        sort_moves(board, &mut moves, tt_best_move);
-
-        for mv in moves {
-            let new_board = board.clone_with_move(&mv);
-            let score = -self.negamax_alpha_beta(&new_board, NEG_INF as i32, -best_score, depth - 1);
-            if score > best_score {
-                best_move = Some(mv);
-                best_score = score;
-            }
-        }
-
-        self.transposition_table.store(board_hash, best_score, best_move, depth, Bounds::Lower);
-
-        (best_score, best_move)
-    }
-
-    fn negamax_alpha_beta(&mut self, board: &Board, alpha: i32, beta: i32, depth: u8) -> i32 {
+    fn negamax_alpha_beta(&mut self, board: &Board, alpha: i32, beta: i32, depth: u8) -> (i32, Option<Move>) {
         let original_alpha = alpha;
         let mut alpha = alpha;
         let mut beta = beta;
+
         let mut tt_best_move = None;
 
         // Check transposition table for an entry
         let board_hash = self.zobrist.hash(board);
         let tt_entry = self.transposition_table.retrieve(board_hash);
         if let Some(entry) = tt_entry {
+            // If the depth is lower, this move is still likely to be the best in the position
+            // from iterative deepening, so we sort it first. We dont want to modidy alpha and beta though.
+            tt_best_move = entry.best_move; 
             if entry.depth >= depth {
-                tt_best_move = entry.best_move;
                 match entry.bounds {
-                    Bounds::Exact => return entry.eval,
+                    Bounds::Exact => return (entry.eval, entry.best_move),
                     Bounds::Lower => alpha = max(alpha, entry.eval),
                     Bounds::Upper => beta = min(beta, entry.eval),
                 }
                 if alpha >= beta {
-                    return entry.eval;
+                    return (entry.eval, entry.best_move);
                 }
             }
         }
 
         if depth == 0 {
-            return self.quiescence(board, alpha, beta);
+            // return (self.quiescence(board, alpha, beta), None);
+            GLOBAL_VARIABLE.fetch_add(1, Ordering::Relaxed);
+            return (self.quiescence(board, alpha, beta) as i32, None);
         }
 
         let mut moves = self.move_gen.generate_moves(board);
@@ -100,35 +90,40 @@ impl Searcher {
         // Checkmate or Stalemate
         if moves.len() == 0 {
             if self.move_gen.attacks_to(board, self.move_gen.king_square(board)) != 0 {
-                return MATE_VALUE + depth as i32;
+                return (MATE_VALUE + depth as i32, None);
             } else { 
-                return 0;
+                return (0, None);
             }
         }
 
-        let mut score = NEG_INF as i32;
+        let mut best_score = NEG_INF as i32;
         let mut best_move = None;
         for mv in moves {
             let new_board = board.clone_with_move(&mv);
-            score = max(score, -self.negamax_alpha_beta(&new_board, -beta, -alpha, depth - 1));
-            alpha = max(alpha, score);
-            if alpha >= beta {
+            let score = -self.negamax_alpha_beta(&new_board, -beta, -alpha, depth - 1).0;
+            
+            if score > best_score {
+                best_score = score;
                 best_move = Some(mv);
+            }
+
+            alpha = max(alpha, best_score);
+            if alpha >= beta {
                 break;
             }
         }
 
-        let bound = if score <= original_alpha {
+        let bound = if best_score <= original_alpha {
             Bounds::Upper
-        } else if score >= beta {
+        } else if best_score >= beta {
             Bounds::Lower
         } else {
             Bounds::Exact
         };
 
-        self.transposition_table.store(board_hash, score, best_move, depth, bound);
+        self.transposition_table.store(board_hash, best_score, best_move, depth, bound);
 
-        return score;
+        return (best_score, best_move);
     }
 
     fn quiescence(&mut self, board: &Board, alpha: i32, beta: i32) -> i32 {
