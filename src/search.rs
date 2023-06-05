@@ -1,16 +1,10 @@
 use crate::move_gen::MoveGenerator;
-use crate::eval::{evaluate, self};
+use crate::eval::evaluate;
 use crate::board::Board;
 use crate::moves::{Move, MoveType};
-use crate::transposition::{TranspositionTable, Entry, Bounds};
+use crate::transposition::{TranspositionTable, Bounds};
 use crate::zobrist::ZobristTable;
 use std::cmp::{max, min};
-
-use std::sync::atomic::{AtomicIsize, Ordering};
-
-static GLOBAL_VARIABLE: AtomicIsize = AtomicIsize::new(0);
-
-
 
 // Using i16 MIN and MAX to separate out mating moves
 // There was an issue where the engine would not play the move that leads to mate
@@ -40,13 +34,9 @@ impl Searcher {
         let mut best_score = NEG_INF as i32;
 
         for depth in 1..max_depth+1 {
-            let board_hash = self.zobrist.hash(board);
             (best_score, best_move) = self.negamax_alpha_beta(board, NEG_INF, INF, depth);
 
-            let value = GLOBAL_VARIABLE.load(Ordering::Relaxed);
-            GLOBAL_VARIABLE.store(0, Ordering::Relaxed);
-            println!("Value: {}", value);
-
+            let board_hash = self.zobrist.hash(board);
             self.transposition_table.store(board_hash, best_score, best_move, depth, Bounds::Lower);
         }
         (best_score, best_move)
@@ -57,14 +47,15 @@ impl Searcher {
         let mut alpha = alpha;
         let mut beta = beta;
 
-        let mut tt_best_move = None;
-
         // Check transposition table for an entry
         let board_hash = self.zobrist.hash(board);
         let tt_entry = self.transposition_table.retrieve(board_hash);
+        let mut tt_best_move = None;
+        
+        // If the depth is lower, the TT move is still likely to be the best in the position
+        // from iterative deepening, so we sort it first. We dont want to modidy alpha and beta though
+        // unless the depth is greater or equal.
         if let Some(entry) = tt_entry {
-            // If the depth is lower, this move is still likely to be the best in the position
-            // from iterative deepening, so we sort it first. We dont want to modidy alpha and beta though.
             tt_best_move = entry.best_move; 
             if entry.depth >= depth {
                 match entry.bounds {
@@ -78,9 +69,8 @@ impl Searcher {
             }
         }
 
+        // Perform quiescence search, going through all captures, promotions, and checks
         if depth == 0 {
-            // return (self.quiescence(board, alpha, beta), None);
-            GLOBAL_VARIABLE.fetch_add(1, Ordering::Relaxed);
             return (self.quiescence(board, alpha, beta) as i32, None);
         }
 
@@ -101,7 +91,6 @@ impl Searcher {
         for mv in moves {
             let new_board = board.clone_with_move(&mv);
             let score = -self.negamax_alpha_beta(&new_board, -beta, -alpha, depth - 1).0;
-            
             if score > best_score {
                 best_score = score;
                 best_move = Some(mv);
@@ -113,6 +102,7 @@ impl Searcher {
             }
         }
 
+        // Get bound and store best move in TT
         let bound = if best_score <= original_alpha {
             Bounds::Upper
         } else if best_score >= beta {
@@ -128,7 +118,6 @@ impl Searcher {
 
     fn quiescence(&mut self, board: &Board, alpha: i32, beta: i32) -> i32 {
         let mut alpha = alpha;
-
         let stand_pat = evaluate(board) as i32;
 
         if stand_pat >= beta {
@@ -154,7 +143,6 @@ impl Searcher {
         for mv in moves {
             let new_board = board.clone_with_move(&mv);
             let score = -self.quiescence(&new_board, -beta, -alpha);
-
             if score >= beta {
                 return beta;
             }
@@ -162,7 +150,6 @@ impl Searcher {
                 alpha = score;
             }
         }
-
         return alpha;
     }
 
@@ -199,6 +186,7 @@ pub fn sort_moves(board: &Board, moves: &mut [Move], tt_best_move: Option<Move>)
     })
 }
 
+// Used in quiescence search as we dont use TT move
 pub fn mvv_lva_sort_moves(board: &Board, moves: &mut [Move]) {
     moves.sort_by_cached_key(|mv: &Move| {
         if mv.move_type == MoveType::EnPassant {
