@@ -39,3 +39,5 @@ fn main() {
     println!();
 
 }
+
+// r2q1rk1/ppp2pp1/2n1b2p/3p4/3PnB1P/2P2NP1/P1Q1PPB1/R3K2R b KQ - 4 12

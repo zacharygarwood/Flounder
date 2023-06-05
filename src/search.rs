@@ -143,9 +143,18 @@ impl Searcher {
             alpha = stand_pat;
         }
 
+        let king_in_check = self.move_gen.attacks_to(board, self.move_gen.king_square(board)) != 0;
 
-        let mut moves = self.move_gen.generate_captures(board);
+        let mut moves = match king_in_check {
+            true => self.move_gen.generate_moves(board),
+            false => self.move_gen.generate_captures(board),
+        };
+
         mvv_lva_sort_moves(board, &mut moves);
+
+        if moves.len() == 0 && king_in_check {
+            return MATE_VALUE as i32;
+        }
 
         for mv in moves {
             let new_board = board.clone_with_move(&mv);
