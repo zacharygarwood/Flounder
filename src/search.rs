@@ -12,7 +12,7 @@ use std::cmp::{max, min};
 const NEG_INF: i32 = (std::i16::MIN + 1) as i32;
 const INF: i32 = (std::i16::MAX - 1) as i32;
 
-const MATE_VALUE: i32 = std::i32::MIN + 1;
+const MATE_VALUE: i32 = std::i32::MAX - 1;
 
 pub struct Searcher {
     move_gen: MoveGenerator,
@@ -80,7 +80,7 @@ impl Searcher {
         // Checkmate or Stalemate
         if moves.len() == 0 {
             if self.move_gen.attacks_to(board, self.move_gen.king_square(board)) != 0 {
-                return (MATE_VALUE + depth as i32, None);
+                return (-MATE_VALUE + depth as i32, None);
             } else { 
                 return (0, None);
             }
@@ -120,24 +120,24 @@ impl Searcher {
         let mut alpha = alpha;
         let stand_pat = evaluate(board) as i32;
 
-        if stand_pat >= beta {
-            return beta;
-        }
-        if alpha < stand_pat {
-            alpha = stand_pat;
-        }
-
         let king_in_check = self.move_gen.attacks_to(board, self.move_gen.king_square(board)) != 0;
 
         let mut moves = match king_in_check {
             true => self.move_gen.generate_moves(board),
-            false => self.move_gen.generate_captures(board),
+            false => self.move_gen.generate_quiescence_moves(board),
         };
 
         mvv_lva_sort_moves(board, &mut moves);
 
         if moves.len() == 0 && king_in_check {
-            return MATE_VALUE as i32;
+            return -MATE_VALUE as i32;
+        }
+
+        if stand_pat >= beta {
+            return beta;
+        }
+        if alpha < stand_pat {
+            alpha = stand_pat;
         }
 
         for mv in moves {
