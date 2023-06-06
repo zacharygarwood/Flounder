@@ -4,13 +4,14 @@ use crate::board::Board;
 use crate::moves::{Move, MoveType};
 use crate::transposition::{TranspositionTable, Bounds};
 use crate::zobrist::ZobristTable;
+use crate::repetition::RepetitionTable;
 use std::cmp::{max, min};
 
 // Using i16 MIN and MAX to separate out mating moves
 // There was an issue where the engine would not play the move that leads to mate
 // as the move values were the same 
 const NEG_INF: i32 = (std::i16::MIN + 1) as i32;
-const INF: i32 = (std::i16::MAX - 1) as i32;
+const INF: i32 = -NEG_INF;
 
 const MATE_VALUE: i32 = std::i32::MAX - 1;
 
@@ -18,6 +19,7 @@ pub struct Searcher {
     move_gen: MoveGenerator,
     zobrist: ZobristTable,
     transposition_table: TranspositionTable,
+    repetition_table: RepetitionTable,
 }
 
 impl Searcher {
@@ -26,6 +28,7 @@ impl Searcher {
             move_gen: MoveGenerator::new(),
             zobrist: ZobristTable::new(),
             transposition_table: TranspositionTable::new(),
+            repetition_table: RepetitionTable::new(),
         }
     }
 
@@ -47,8 +50,16 @@ impl Searcher {
         let mut alpha = alpha;
         let mut beta = beta;
 
-        // Check transposition table for an entry
         let board_hash = self.zobrist.hash(board);
+        self.repetition_table.increment_position_count(board_hash);
+
+        // Check for three fold repetition
+        if self.repetition_table.is_threefold_repetition(board_hash) {
+            self.repetition_table.decrement_position_count(board_hash);
+            return (0, None);
+        }
+
+        // Check transposition table for an entry
         let tt_entry = self.transposition_table.retrieve(board_hash);
         let mut tt_best_move = None;
         
@@ -59,11 +70,15 @@ impl Searcher {
             tt_best_move = entry.best_move; 
             if entry.depth >= depth {
                 match entry.bounds {
-                    Bounds::Exact => return (entry.eval, entry.best_move),
+                    Bounds::Exact => {
+                        self.repetition_table.decrement_position_count(board_hash);
+                        return (entry.eval, entry.best_move)
+                    },
                     Bounds::Lower => alpha = max(alpha, entry.eval),
                     Bounds::Upper => beta = min(beta, entry.eval),
                 }
                 if alpha >= beta {
+                    self.repetition_table.decrement_position_count(board_hash);
                     return (entry.eval, entry.best_move);
                 }
             }
@@ -71,7 +86,9 @@ impl Searcher {
 
         // Perform quiescence search, going through all captures, promotions, and checks
         if depth == 0 {
-            return (self.quiescence(board, alpha, beta) as i32, None);
+            let eval = self.quiescence(board, alpha, beta) as i32;
+            self.repetition_table.decrement_position_count(board_hash);
+            return (eval, None);
         }
 
         let mut moves = self.move_gen.generate_moves(board);
@@ -79,6 +96,7 @@ impl Searcher {
 
         // Checkmate or Stalemate
         if moves.len() == 0 {
+            self.repetition_table.decrement_position_count(board_hash);
             if self.move_gen.attacks_to(board, self.move_gen.king_square(board)) != 0 {
                 return (-MATE_VALUE + depth as i32, None);
             } else { 
@@ -112,16 +130,23 @@ impl Searcher {
         };
 
         self.transposition_table.store(board_hash, best_score, best_move, depth, bound);
+        self.repetition_table.decrement_position_count(board_hash);
 
         return (best_score, best_move);
     }
 
     fn quiescence(&mut self, board: &Board, alpha: i32, beta: i32) -> i32 {
         let mut alpha = alpha;
-        let stand_pat = evaluate(board) as i32;
+
+        let board_hash = self.zobrist.hash(board);
+        self.repetition_table.increment_position_count(board_hash);
+
+        if self.repetition_table.is_threefold_repetition(board_hash) {
+            self.repetition_table.decrement_position_count(board_hash);
+            return 0;
+        }
 
         let king_in_check = self.move_gen.attacks_to(board, self.move_gen.king_square(board)) != 0;
-
         let mut moves = match king_in_check {
             true => self.move_gen.generate_moves(board),
             false => self.move_gen.generate_quiescence_moves(board),
@@ -130,10 +155,13 @@ impl Searcher {
         mvv_lva_sort_moves(board, &mut moves);
 
         if moves.len() == 0 && king_in_check {
+            self.repetition_table.decrement_position_count(board_hash);
             return -MATE_VALUE as i32;
         }
 
+        let stand_pat = evaluate(board) as i32;
         if stand_pat >= beta {
+            self.repetition_table.decrement_position_count(board_hash);
             return beta;
         }
         if alpha < stand_pat {
@@ -144,12 +172,14 @@ impl Searcher {
             let new_board = board.clone_with_move(&mv);
             let score = -self.quiescence(&new_board, -beta, -alpha);
             if score >= beta {
+                self.repetition_table.decrement_position_count(board_hash);
                 return beta;
             }
             if score > alpha {
                 alpha = score;
             }
         }
+        self.repetition_table.decrement_position_count(board_hash);
         return alpha;
     }
 

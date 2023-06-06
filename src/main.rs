@@ -12,6 +12,7 @@ mod eval;
 mod search;
 mod zobrist;
 mod transposition;
+mod repetition;
 
 use board::*;
 use search::Searcher;
