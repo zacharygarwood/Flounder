@@ -1,4 +1,4 @@
-use crate::pieces::{Piece, Color, PIECE_COUNT, COLOR_COUNT, PieceIterator};
+use crate::pieces::{Piece, Color, PIECE_COUNT, COLOR_COUNT, PieceIterator, ColorIterator};
 use crate::square::{Square, A1, D1, F1, G1, H1, A8, D8, F8, G8, H8, square_to_algebraic};
 use crate::bitboard::{Bitboard, BitboardOperations, WHITE_QUEEN_SIDE, WHITE_KING_SIDE, BLACK_QUEEN_SIDE, BLACK_KING_SIDE};
 use crate::util::print_bitboard;
@@ -274,6 +274,18 @@ impl Board {
         for piece in iter {
             if self.bb_piece(piece) & square_bb != 0 {
                 return Some(piece);
+            }
+        }
+        None
+    }
+
+    pub fn get_color_at(&self, square: Square) -> Option<Color> {
+        let square_bb = Bitboard::square_to_bitboard(square);
+
+        let iter = ColorIterator::new();
+        for color in iter {
+            if self.bb_color(color) & square_bb != 0 {
+                return Some(color);
             }
         }
         None
