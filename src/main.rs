@@ -21,7 +21,7 @@ use std::time::Instant;
 
 fn main() {
     // Initialize the bitboard with some sample positions
-    let board = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    let board = Board::new("8/4Q3/5rk1/8/1p3P2/2pp2PP/7K/1qB5 w - - 1 3");
     let mut searcher = Searcher::new();
 
     board.print();
