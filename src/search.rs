@@ -64,7 +64,7 @@ impl Searcher {
         let mut tt_best_move = None;
         
         // If the depth is lower, the TT move is still likely to be the best in the position
-        // from iterative deepening, so we sort it first. We dont want to modify alpha and beta though
+        // from iterative deepening, so we sort it first. We dont want to modidy alpha and beta though
         // unless the depth is greater or equal.
         if let Some(entry) = tt_entry {
             tt_best_move = entry.best_move; 
@@ -105,7 +105,7 @@ impl Searcher {
         }
 
         let mut best_score = NEG_INF as i32;
-        let mut best_move = Some(moves[0]);
+        let mut best_move = None;
         for mv in moves {
             let new_board = board.clone_with_move(&mv);
             let score = -self.negamax_alpha_beta(&new_board, -beta, -alpha, depth - 1).0;
@@ -148,8 +148,8 @@ impl Searcher {
 
         let king_in_check = self.move_gen.attacks_to(board, self.move_gen.king_square(board)) != 0;
         let mut moves = match king_in_check {
-            true => self.move_gen.generate_moves(board), // All moves
-            false => self.move_gen.generate_quiescence_moves(board), // Captures, checks, promotions
+            true => self.move_gen.generate_moves(board),
+            false => self.move_gen.generate_quiescence_moves(board),
         };
 
         mvv_lva_sort_moves(board, &mut moves);
