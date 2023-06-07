@@ -24,7 +24,17 @@ impl Move {
     }
 
     pub fn print(&self) {
-        print!("{}{}", square_to_algebraic(self.from), square_to_algebraic(self.to));
+        let mut promotion_piece_char = "";
+        if self.move_type == MoveType::Promotion {
+            promotion_piece_char = match self.piece_type {
+                Piece::Bishop => "b",
+                Piece::Knight => "n",
+                Piece::Rook => "r",
+                Piece::Queen => "q",
+                _ => ""
+            }
+        }
+        print!("{}{}{}", square_to_algebraic(self.from), square_to_algebraic(self.to), promotion_piece_char);
     }
 
     pub fn pretty_print(&self) {
