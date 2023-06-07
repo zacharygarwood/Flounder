@@ -51,34 +51,23 @@ impl Searcher {
         let mut beta = beta;
 
         let board_hash = self.zobrist.hash(board);
-        self.repetition_table.increment_position_count(board_hash);
-
-        // Check for three fold repetition
-        if self.repetition_table.is_threefold_repetition(board_hash) {
-            self.repetition_table.decrement_position_count(board_hash);
-            return (0, None);
-        }
 
         // Check transposition table for an entry
         let tt_entry = self.transposition_table.retrieve(board_hash);
         let mut tt_best_move = None;
         
         // If the depth is lower, the TT move is still likely to be the best in the position
-        // from iterative deepening, so we sort it first. We dont want to modify alpha and beta though
+        // from iterative deepening, so we sort it first. We dont want to modidy alpha and beta though
         // unless the depth is greater or equal.
         if let Some(entry) = tt_entry {
             tt_best_move = entry.best_move; 
             if entry.depth >= depth {
                 match entry.bounds {
-                    Bounds::Exact => {
-                        self.repetition_table.decrement_position_count(board_hash);
-                        return (entry.eval, entry.best_move)
-                    },
+                    Bounds::Exact => return (entry.eval, entry.best_move),
                     Bounds::Lower => alpha = max(alpha, entry.eval),
                     Bounds::Upper => beta = min(beta, entry.eval),
                 }
                 if alpha >= beta {
-                    self.repetition_table.decrement_position_count(board_hash);
                     return (entry.eval, entry.best_move);
                 }
             }
@@ -86,9 +75,7 @@ impl Searcher {
 
         // Perform quiescence search, going through all captures, promotions, and checks
         if depth == 0 {
-            let eval = self.quiescence(board, alpha, beta) as i32;
-            self.repetition_table.decrement_position_count(board_hash);
-            return (eval, None);
+            return (self.quiescence(board, alpha, beta) as i32, None);
         }
 
         let mut moves = self.move_gen.generate_moves(board);
@@ -96,7 +83,6 @@ impl Searcher {
 
         // Checkmate or Stalemate
         if moves.len() == 0 {
-            self.repetition_table.decrement_position_count(board_hash);
             if self.move_gen.attacks_to(board, self.move_gen.king_square(board)) != 0 {
                 return (-MATE_VALUE + depth as i32, None);
             } else { 
@@ -105,7 +91,7 @@ impl Searcher {
         }
 
         let mut best_score = NEG_INF as i32;
-        let mut best_move = Some(moves[0]);
+        let mut best_move = None;
         for mv in moves {
             let new_board = board.clone_with_move(&mv);
             let score = -self.negamax_alpha_beta(&new_board, -beta, -alpha, depth - 1).0;
@@ -130,7 +116,6 @@ impl Searcher {
         };
 
         self.transposition_table.store(board_hash, best_score, best_move, depth, bound);
-        self.repetition_table.decrement_position_count(board_hash);
 
         return (best_score, best_move);
     }
@@ -138,30 +123,20 @@ impl Searcher {
     fn quiescence(&mut self, board: &Board, alpha: i32, beta: i32) -> i32 {
         let mut alpha = alpha;
 
-        let board_hash = self.zobrist.hash(board);
-        self.repetition_table.increment_position_count(board_hash);
-
-        if self.repetition_table.is_threefold_repetition(board_hash) {
-            self.repetition_table.decrement_position_count(board_hash);
-            return 0;
-        }
-
         let king_in_check = self.move_gen.attacks_to(board, self.move_gen.king_square(board)) != 0;
         let mut moves = match king_in_check {
-            true => self.move_gen.generate_moves(board), // All moves
-            false => self.move_gen.generate_quiescence_moves(board), // Captures, checks, promotions
+            true => self.move_gen.generate_moves(board),
+            false => self.move_gen.generate_quiescence_moves(board),
         };
 
         mvv_lva_sort_moves(board, &mut moves);
 
         if moves.len() == 0 && king_in_check {
-            self.repetition_table.decrement_position_count(board_hash);
             return -MATE_VALUE as i32;
         }
 
         let stand_pat = evaluate(board) as i32;
         if stand_pat >= beta {
-            self.repetition_table.decrement_position_count(board_hash);
             return beta;
         }
         if alpha < stand_pat {
@@ -172,14 +147,12 @@ impl Searcher {
             let new_board = board.clone_with_move(&mv);
             let score = -self.quiescence(&new_board, -beta, -alpha);
             if score >= beta {
-                self.repetition_table.decrement_position_count(board_hash);
                 return beta;
             }
             if score > alpha {
                 alpha = score;
             }
         }
-        self.repetition_table.decrement_position_count(board_hash);
         return alpha;
     }
 
