@@ -1,11 +1,28 @@
-struct ChessEngine {
-    // Chess engine state and data structures
+use crate::board::Board;
+use crate::search::Searcher;
+use crate::move_gen::MoveGenerator;
+use crate::util::print_board;
+
+pub struct Flounder {
+    board: Board,
+    searcher: Searcher,
 }
 
-impl ChessEngine {
-    fn new() -> ChessEngine {
-        // Initialize the chess engine
-        // Return a new instance of ChessEngine
+impl Flounder {
+    pub fn new() -> Self {
+        Self {
+            board: Board::default(),
+            searcher: Searcher::new(),
+        }
+    }
+    pub fn uci_loop(&mut self) {
+        loop {
+            let mut command = String::new();
+            if let Ok(_) = std::io::stdin().read_line(&mut command) {
+                command = command.trim().to_string();
+                self.handle_command(&command);
+            }
+        }
     }
 
     fn handle_command(&mut self, command: &str) {
@@ -15,8 +32,8 @@ impl ChessEngine {
             "uci" => {
                 self.handle_uci_command();
             }
-            "setoption" => {
-                // Handle "setoption" command
+            "isready" => {
+                self.handle_isready_command();
             }
             "ucinewgame" => {
                 self.handle_ucinewgame_command();
@@ -25,16 +42,10 @@ impl ChessEngine {
                 self.handle_position_command(&parts);
             }
             "go" => {
-                self.handle_go_command(&parts);
-            }
-            "stop" => {
-                // Handle "stop" command
-            }
-            "ponderhit" => {
-                // Handle "ponderhit" command
+                self.handle_go_command();
             }
             "quit" => {
-                // Handle "quit" command
+                std::process::exit(0);
             }
             _ => {
                 // Handle unknown command
@@ -48,30 +59,43 @@ impl ChessEngine {
         println!("uciok");
     }
 
+    fn handle_isready_command(&mut self) {
+        println!("readyok");
+    }
+
     fn handle_ucinewgame_command(&mut self) {
-        // Reset the engine's internal state for a new game
+        self.board = Board::default();
     }
 
     fn handle_position_command(&mut self, parts: &[&str]) {
-        // Parse the position and moves from the command
-        let fen = parts[2..].join(" ");
-        // Update the engine's internal state with the position
-    }
-
-    fn handle_go_command(&self, parts: &[&str]) {
-        // Extract search parameters from the command
-        // Start the search and find the best move
-        let best_move = "bestmove e2e4";  // Placeholder for actual move
-        println!("{}", best_move);
-    }
-
-    fn uci_loop(&mut self) {
-        loop {
-            let mut command = String::new();
-            if let Ok(_) = std::io::stdin().read_line(&mut command) {
-                command = command.trim().to_string();
-                self.handle_command(&command);
+        let position_type = parts[1];
+        if position_type == "startpos" {
+            self.board = Board::default();
+            
+            if parts.len() > 2 && parts[2] == "moves" {
+                self.make_moves(&parts[3..]);
             }
+        } else if position_type == "fen" {
+            let fen = parts[2..8].join(" ");
+            self.board = Board::new(&fen);
+    
+            if parts.len() > 8 && parts[8] == "moves" {
+                self.make_moves(&parts[9..]);
+            }
+        }
+    }
+
+    fn handle_go_command(&mut self) {
+        let (_, best_move) = self.searcher.best_move(&self.board, 6);
+        println!("bestmove {}", best_move.unwrap().to_algebraic());
+    }
+
+    fn make_moves(&mut self, move_strs: &[&str]) {
+        let move_gen = MoveGenerator::new();
+        for mv_str in move_strs.iter() {
+            let moves = move_gen.generate_moves(&self.board);
+            let mv = moves.iter().find(|m| m.to_algebraic() == *mv_str);
+            self.board.make_move(mv.unwrap());
         }
     }
 }
