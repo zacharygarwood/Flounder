@@ -91,7 +91,7 @@ impl Searcher {
         }
 
         let mut best_score = NEG_INF as i32;
-        let mut best_move = None;
+        let mut best_move = Some(moves[0]);
         for mv in moves {
             let new_board = board.clone_with_move(&mv);
             let score = -self.negamax_alpha_beta(&new_board, -beta, -alpha, depth - 1).0;

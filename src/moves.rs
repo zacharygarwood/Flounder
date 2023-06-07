@@ -24,6 +24,10 @@ impl Move {
     }
 
     pub fn print(&self) {
+        print!("{}", self.to_algebraic());
+    }
+
+    pub fn to_algebraic(&self) -> String {
         let mut promotion_piece_char = "";
         if self.move_type == MoveType::Promotion {
             promotion_piece_char = match self.piece_type {
@@ -34,7 +38,8 @@ impl Move {
                 _ => ""
             }
         }
-        print!("{}{}{}", square_to_algebraic(self.from), square_to_algebraic(self.to), promotion_piece_char);
+        let algebreaic = format!("{}{}{}", square_to_algebraic(self.from), square_to_algebraic(self.to), promotion_piece_char);
+        algebreaic
     }
 
     pub fn pretty_print(&self) {
