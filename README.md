@@ -14,12 +14,12 @@ $ cargo build --release
 ## Usage
 Flounder implements the following UCI commands: `uci`, `isready`, `ucinewgame`, `position`, `go`, and `quit`. More about the usage of these commands can be found here [UCI Protocol](https://backscattering.de/chess/uci/).
 
-Below is an example use case of running Flounder. First, it sets the board to the starting position with the move e2e4 played. The `go` command is then used to get the best move for the current player, in this case black, and `bestmove b1c3` is outputted by Flounder. Lastly, `quit` is used to exit out of the program.
+Below is an example use case of running Flounder. First, it sets the board to the starting position with the move e2e4 played. The `go` command is then used to get the best move for the current player, in this case black, and `bestmove b8c6` is outputted by Flounder. Lastly, `quit` is used to exit out of the program.
 ```
 $ ./flounder.exe
 $ position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e2e4
 $ go
-$ bestmove b1c3
+$ bestmove b8c6
 $ quit
 ```
 
