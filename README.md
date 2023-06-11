@@ -2,7 +2,24 @@
 
 ![Flounder](./img/flounder.png)
 
-Flounder is a chess engine created in Rust. Don't let its looks deceive you!
+Flounder is a UCI compatible chess engine created in Rust. Don't let its looks deceive you!
+
+## Installation
+To build Flounder all you need to do is clone this repository and build a release. This will make an executable called `flounder.exe` in `target/release/'.
+```
+$ cargo build --release
+```
+
+## Usage
+Flounder implements the following UCI commands: `uci`, `isready`, `ucinewgame`, `position`, `go`, and `quit`. More about the usage of these commands can be found here [UCI Protocol](https://backscattering.de/chess/uci/)
+Below is an example use case of running Flounder. First, it sets the board to the starting position with the move e2e4 played. The `go` command is then used to get the best move for the current player, in this case black, and `bestmove b1c3` is outputted by Flounder. Lastly, `quit` is used to exit out of the program.
+```
+$ ./flounder.exe
+$ position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e2e4
+$ go
+$ bestmove b1c3
+$ quit
+```
 
 ## Board Representation
 - [Bitboards](https://www.chessprogramming.org/Bitboards)
