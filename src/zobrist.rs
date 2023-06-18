@@ -99,7 +99,7 @@ mod tests {
     use crate::zobrist::ZobristTable;
 
     #[test]
-    fn hash_same_positions() {
+    fn same_positions_have_same_hash() {
         let zobrist = ZobristTable::new();
 
         let pos1 = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -109,7 +109,7 @@ mod tests {
     }
 
     #[test]
-    fn hash_different_positions() {
+    fn different_positions_have_different_hash() {
         let zobrist = ZobristTable::new();
 
         let pos = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -119,7 +119,7 @@ mod tests {
     }
 
     #[test]
-    fn hash_different_castling() {
+    fn different_castling_rights_have_different_hash() {
         let zobrist = ZobristTable::new();
 
         let pos = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -129,7 +129,7 @@ mod tests {
     }
 
     #[test]
-    fn hash_different_en_passant() {
+    fn different_en_passant_targets_have_different_hash() {
         let zobrist = ZobristTable::new();
 
         let pos = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -139,7 +139,7 @@ mod tests {
     }
 
     #[test]
-    fn hash_different_color() {
+    fn different_colors_have_different_hash() {
         let zobrist = ZobristTable::new();
 
         let pos = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
