@@ -92,3 +92,60 @@ impl ZobristTable {
         hash
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::board::Board;
+    use crate::zobrist::ZobristTable;
+
+    #[test]
+    fn hash_same_positions() {
+        let zobrist = ZobristTable::new();
+
+        let pos1 = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        let pos2 = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
+        assert_eq!(zobrist.hash(&pos1), zobrist.hash(&pos2));
+    }
+
+    #[test]
+    fn hash_different_positions() {
+        let zobrist = ZobristTable::new();
+
+        let pos = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        let pos_different = Board::new("pnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
+        assert_ne!(zobrist.hash(&pos), zobrist.hash(&pos_different));
+    }
+
+    #[test]
+    fn hash_different_castling() {
+        let zobrist = ZobristTable::new();
+
+        let pos = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        let pos_no_castling = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1");
+
+        assert_ne!(zobrist.hash(&pos), zobrist.hash(&pos_no_castling));    
+    }
+
+    #[test]
+    fn hash_different_en_passant() {
+        let zobrist = ZobristTable::new();
+
+        let pos = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        let pos_with_en_passant = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - e4 0 1");
+
+        assert_ne!(zobrist.hash(&pos), zobrist.hash(&pos_with_en_passant));    
+    }
+
+    #[test]
+    fn hash_different_color() {
+        let zobrist = ZobristTable::new();
+
+        let pos = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        let pos_different_color = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b - - 0 1");
+
+        assert_ne!(zobrist.hash(&pos), zobrist.hash(&pos_different_color));    
+    }
+    
+}
