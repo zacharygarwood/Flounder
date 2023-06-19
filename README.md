@@ -54,7 +54,7 @@ $ quit
 ```
 
 ## Tests
-Use the following command to run the unit tests.
+Flounder uses unit tests throughout the code to verify everything is working as intended. To run the unit tests use the below command.
 ```
 $ cargo test
 ```
