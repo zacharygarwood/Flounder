@@ -52,3 +52,43 @@ pub fn square_to_algebraic(square: Square) -> String {
     let rank_char = ('1' as u8 + rank) as char;
     format!("{}{}", file_char, rank_char)
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::square::{square_to_algebraic, algebraic_to_square, rank_file_to_square, square_to_rank_file};
+
+
+    #[test]
+    fn test_square_to_algebraic() {
+        assert_eq!("a1", square_to_algebraic(0));
+        assert_eq!("a8", square_to_algebraic(56));
+        assert_eq!("h1", square_to_algebraic(7));
+        assert_eq!("h8", square_to_algebraic(63));
+    }
+
+    #[test]
+    fn test_algebraic_to_square() {
+        assert_eq!(0, algebraic_to_square("a1"));
+        assert_eq!(56, algebraic_to_square("a8"));
+        assert_eq!(7, algebraic_to_square("h1"));
+        assert_eq!(63, algebraic_to_square("h8"));
+    }
+
+    #[test]
+    fn test_rank_file_to_square() {
+        assert_eq!(0, rank_file_to_square(0, 0));
+        assert_eq!(7, rank_file_to_square(0, 7));
+        assert_eq!(56, rank_file_to_square(7, 0));
+        assert_eq!(63, rank_file_to_square(7, 7));
+    }
+
+    #[test]
+    fn test_square_to_rank_file() {
+        assert_eq!((0,0), square_to_rank_file(0));
+        assert_eq!((0,7), square_to_rank_file(7));
+        assert_eq!((7,0), square_to_rank_file(56));
+        assert_eq!((7,7), square_to_rank_file(63));
+    }
+
+    
+}
