@@ -41,6 +41,7 @@ Flounder implements the following UCI commands:
 * `position`
 * `go`
 * `quit`
+
 More about the usage of these commands can be found here [UCI Protocol](https://backscattering.de/chess/uci/).
 
 Below is an example use case of running Flounder. First, it sets the board to the starting position with the move e2e4 played. The `go` command is then used to get the best move for the current player, in this case black, and `bestmove b8c6` is outputted by Flounder. Lastly, `quit` is used to exit out of the program.
