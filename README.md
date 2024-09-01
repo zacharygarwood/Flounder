@@ -5,8 +5,6 @@
 ## Overview
 Flounder is a [UCI](https://www.chessprogramming.org/UCI) compatible chess engine written in Rust. Despite its unassuming name, Flounder has grown into a serious competitor (~1800 ELO), consistently outperforming its own creator. If you are up to the test, you can challenge it on Lichess [@FlounderBot](https://lichess.org/@/FlounderBot)! Just a heads up, Flounder may be busy competing against other bots or offline.
 
-If you want to learn more about Flounder, you can do so on my [website](https://zacharygarwood.com/projects/flounder)!
-
 ## Features
 * Board Representation
   * [Bitboards](https://www.chessprogramming.org/Bitboards)
